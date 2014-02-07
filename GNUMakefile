@@ -1,0 +1,11 @@
+CC=g++
+CFLAGS=-O3 -pg -Iinclude `root-config --libs --cflags`
+CFILES=daqana.cc src/event.cc src/daq.cc src/driver.cc src/rootdriver.cc 
+
+daqana: $(CFILES)  
+	$(CC) -o daqana $(CFILES) $(CFLAGS)
+
+clean:
+	rm -f *.o
+	rm daqana
+
