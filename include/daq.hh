@@ -29,8 +29,9 @@ public:
 private:
     long  readTimestamp();
     int  readInt();
-    int  readLongInt();
     void readArrayHeader();
+    int readADCval(int read_int);
+    int readFlag(int read_int);
     
     int  nEventPerArray;
     int  nSample;

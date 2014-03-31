@@ -4,7 +4,7 @@
 
 event::event(){}
 
-event::event(int iev, int ich, long ts, vector<double>* tr, driver* dr){
+event::event(int iev, int ich, long ts, vector<double>* tr, bool isTestPulse, driver* dr){
     // initialize the event
     //drv = dr;
     // event number
@@ -15,6 +15,8 @@ event::event(int iev, int ich, long ts, vector<double>* tr, driver* dr){
     timestamp = ts;
     // trace info
     trace = tr;
+    // test pulse info
+    isTestPulse = iLED;
     // number of pre-trigger samples
     nBaselineCalc = dr->getNPreTrigger() - N_BASELINE_NOT_USED;
     // initialize the event.... calculate baseline, peak, integral
@@ -36,7 +38,7 @@ void event::InitializeEvent(){
     
     peak = 0.;
     // calculate the AREA
-    area = calculatePeaketIntegral();
+    area = calculatePeakAndIntegral();
 }
 
 double event::calculateBaseline(){
@@ -112,7 +114,7 @@ double event::calculatePeakAndIntegral(){
         else{ //no longer above lt
             if (htflag) { // but did reach above ht
                 I=preamp; // assign the value to the integral
-                preamp=0.
+                preamp=0.;
             }}}
     
     return I;
@@ -144,6 +146,7 @@ void event::Plot()
     cout << "So far we are on wave #: " << ievent <<endl;
     char tstr[100];
     sprintf(tstr,"Event = %i",ievent);
+    if (iLED == true) cout << "This event was a test pulse from the LED" << endl;
     canv->SetTitle(tstr);
     canv->Modified();
     canv->Update();

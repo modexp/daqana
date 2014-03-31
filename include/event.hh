@@ -16,7 +16,7 @@ class event
 {
 public:
     event();
-    event(int iev, int ich, long ts, vector<double>* tr, driver* dr);
+    event(int iev, int ich, long ts, vector<double>* tr, bool isTestPulse, driver* dr);
     ~event();
     // initialize: calculate baseline, correct for baseline, find peak, calculate area
     void InitializeEvent();
@@ -28,6 +28,7 @@ public:
     double      getArea()  {return area;};
     long        getTimeStamp() {return timestamp;};
     double      getBaseline() {return baseline;};
+    bool 	getIsTestPulse() {return iLED;};
     double      calculateBaselineRMS();
     double      calculateBaseline();
     double      calculatePeak();
@@ -38,6 +39,7 @@ private:
     int         ichannel;
     long        timestamp;
     vector<double>* trace;
+    int 	iLED;
     double      baseline;
     double      baselineRMS;
     int         nBaselineCalc;

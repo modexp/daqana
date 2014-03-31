@@ -31,7 +31,7 @@ private:
     float integral;
     float pkheight;
     long  timestamp;
-    int   isTestPulse;
+    bool   isTestPulse;
     int   errorCode;
     
     float baseline;

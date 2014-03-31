@@ -16,7 +16,7 @@ rootdriver::rootdriver(driver *drv, bool tmpbool){
     integral = 0.;
     pkheight = 0.;
     timestamp = 0;
-    isTestPulse = 0; 
+    isTestPulse = false;
     errorCode = 0;
     // extra variables for extended root file
     baseline    = 0;
@@ -31,7 +31,7 @@ rootdriver::rootdriver(driver *drv, bool tmpbool){
     tree->Branch("integral", &integral, "integral/F");
     tree->Branch("height", &pkheight, "height/F");
     tree->Branch("time", &timestamp, "time/L");
-    tree->Branch("istestpulse", &isTestPulse, "istestpulse/I");
+    tree->Branch("istestpulse", &isTestPulse, "istestpulse/bool");
     tree->Branch("error", &errorCode, "error/I");
     
     if(longRoot){
@@ -46,7 +46,7 @@ void rootdriver::Fill(event *ev){
     integral   = ev->getArea();
     pkheight   = ev->getPeak();
     timestamp  = ev->getTimeStamp();
-    isTestPulse = 0;
+    isTestPulse = ev->getIsTestPulse();
     errorCode   = 0;
     //
     if(longRoot){

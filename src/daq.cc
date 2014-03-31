@@ -25,9 +25,7 @@ inline int daq::readInt(){
 
     daqfile.read(buff,NBYTE_PER_INT);
     int_buff = (int16_t*)buff;
-    int  i1 = 0x00;
-    i1 = int_buff[0];
-    i1 = ( i1 >> 2);
+    int i1 = int_buff[0];
     //    if(daqfile.read(buff,NBYTE_PER_INT)) memcpy(&i1,buff,NBYTE_PER_INT);
     //    printf("%x %x %i \n",buff[0],buff[1],i1);
     //    delete char0;
@@ -35,6 +33,16 @@ inline int daq::readInt(){
     //printf("%02x %02x\n",buff[0],buff[1]);
     nByteRead = nByteRead + 2;
     return i1;
+}
+
+inline int daq::readADCval(int i1){
+  int i1_adc = i1 >> 2;
+  return i1_adc;
+}
+
+inline int daq::readFlag(int i1){
+  int flag = i1 & 0x0003;
+  return flag;
 }
 
 void daq::readArrayHeader(){
@@ -47,29 +55,12 @@ void daq::readArrayHeader(){
     nByteRead += 4;
 }
 
-inline int daq::readLongInt(){
-    
-    int i1=0x00;
-    char buff[NBYTE_PER_INT];
-    
-    // if we are at the start of a new array then we read the array header first
-    if(nByteRead%(nBytePerArray+ARRAY_HEADER_SIZE) == 0) readArrayHeader();
-    
-    if(daqfile.read(buff,NBYTE_PER_INT)) memcpy(&i1,buff,NBYTE_PER_INT);
-    //    printf("%x %x %i \n",char0[0],char0[1],i1);
-    //    delete char0;
-    
-    nByteRead = nByteRead + 2;
-    //printf("%02x %02x\n",buff[0],buff[1]);
-    return i1;
-}
-
 long daq::readTimestamp(){
     int num16(32768);
     long time_array[N_TIME_INT];
     // read the timing information
     for(int i=0; i<N_TIME_INT; i++){
-        time_array[i] = readLongInt();
+        time_array[i] = readInt();
         if(time_array[i] < 0) time_array[i] = num16 + (num16 + time_array[i]);
     }
     
@@ -82,21 +73,32 @@ event* daq::readEvent(driver* dr) {
 
     // read the channel number
     //int ichan = (readInt()>>2) - CHANNEL_OFFSET;
-    int  ichan = readInt() - CHANNEL_OFFSET;
+    int i1, ichan, chanflag;
+    i1 = readInt();
+    ichan = readADCval(i1);
+    ichan -= CHANNEL_OFFSET;
+    chanflag = readFlag(i1);
+    if (chanflag != 1) cout << "Warning in daq::readEvent: Start bit not in correct place" << endl;
+
     long timestamp = readTimestamp();
     //cout << "Before we define trace" << endl;
     // read the trace
     vector<double> *trace = new vector<double>();
+    bool isTestPulse = false;
+    int ival, flag;
 //    cout <<"NEXT"<<endl;
     for(int i=0; i<nSample; i++){
-        int ival = readInt();
+        i1 = readInt();
+	ival = readADCval(i1);
 //        cout <<i <<" "<<ival<<endl; 
         trace->push_back((double)ival);
+	flag = readFlag(i1);
+	if (flag == 3) isTestPulse = true;
     }
     
     nEvent++;
     // create a single event from the channel number, time of the event, and the waveform information
-    event* newEv = new event(nEvent,ichan,timestamp,trace,dr);    
+    event* newEv = new event(nEvent,ichan,timestamp,trace,isTestPulse,dr);    
     //cout << "After we read event" << endl;
     
     return newEv;
