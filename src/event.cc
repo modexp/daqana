@@ -4,7 +4,7 @@
 
 event::event(){}
 
-event::event(int iev, int ich, long ts, vector<double>* tr, bool isTestPulse, driver* dr){
+event::event(Int_t iev, Int_t ich, ULong64_t ts, vector<Double_t>* tr, Bool_t isTestPulse, driver* dr){
     // initialize the event
     //drv = dr;
     // event number
@@ -41,26 +41,26 @@ void event::InitializeEvent(){
     area = calculatePeakAndIntegral();
 }
 
-double event::calculateBaseline(){
-    double b = 0;
-    for(int i=0; i<nBaselineCalc; i++) b+=trace->at(i);
+Double_t event::calculateBaseline(){
+    Double_t b = 0;
+    for(Int_t i=0; i<nBaselineCalc; i++) b+=trace->at(i);
     b /= nBaselineCalc;
     return b;
 }
 
-double event::calculateBaselineRMS(){
-    double rms = 0;
-    for(int i=0; i<nBaselineCalc; i++) rms += pow(trace->at(i) - baseline ,2);
+Double_t event::calculateBaselineRMS(){
+    Double_t rms = 0;
+    for(Int_t i=0; i<nBaselineCalc; i++) rms += pow(trace->at(i) - baseline ,2);
     rms /= nBaselineCalc;
     rms = sqrt(rms);
     return rms;
 }
 
-double event::calculatePeak(){
+Double_t event::calculatePeak(){
 
-    double pk = -9999;
-    for(int i=0; i<trace->size(); i++){
-        double val = trace->at(i);
+    Double_t pk = -9999;
+    for(Int_t i=0; i<trace->size(); i++){
+        Double_t val = trace->at(i);
         if(val>pk) pk =val;
     }
     
@@ -69,11 +69,11 @@ double event::calculatePeak(){
     return pk;
 }
 
-double event::calculateIntegral(){
+Double_t event::calculateIntegral(){
     
-    double I = 0;
+    Double_t I = 0;
     for(int i=0; i<trace->size(); i++){
-        double val = trace->at(i);
+        Double_t val = trace->at(i);
         I+=val;
     }
     
@@ -90,18 +90,18 @@ double event::calculateIntegral(){
 //the following function assumes only 1 peak (the last one) at the moment and only calulates the integral.
 //future function should also calculate the peak heigh, to save on time looping over wf.
 
-double event::calculatePeakAndIntegral(){
+Double_t event::calculatePeakAndIntegral(){
 
-    double I = 0;
-    float preamp=0.;
-    float amp = 0.;
+    Double_t I = 0;
+    Float_t preamp=0.;
+    Float_t amp = 0.;
     
-    bool htflag = false;
+    Bool_t htflag = false;
     
-    int ht = 1000.; //some random value
-    int lt = 100.; //some other random value
+    Int_t ht = 1000.; //some random value
+    Int_t lt = 100.; //some other random value
     
-    for(int i=0; i<trace->size(); i++){ //go over all ze bins
+    for(Int_t i=0; i<trace->size(); i++){ //go over all ze bins
         amp = trace->at(i) - baseline;
         
         if (amp>lt){ //made it over lt, start counting stuff
@@ -134,7 +134,7 @@ void event::Plot()
     TGraph *voltages = new TGraph();
     TGraph* g_base = new TGraph();
     
-    for (int m = 0; m<(nDataPoints-1); ++m)
+    for (Int_t m = 0; m<(nDataPoints-1); ++m)
     {
         voltages->SetPoint(m, m*nDeltaT, trace->at(m));
         g_base->SetPoint(m, m*nDeltaT, baseline);

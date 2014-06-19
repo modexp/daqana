@@ -11,6 +11,8 @@
 #include "event.hh"
 #include "driver.hh"
 
+#include <stdint.h>
+
 using namespace std;
 
 
@@ -27,17 +29,17 @@ private:
     TFile *f;
     TTree *tree;
     
-    int   chanNum;
-    float integral;
-    float pkheight;
-    long  timestamp;
-    bool   isTestPulse;
-    int   errorCode;
+    Int_t   chanNum;
+    Float_t integral;
+    Float_t pkheight;
+    ULong64_t  timestamp;
+    Bool_t   isTestPulse;
+    Int_t   errorCode;
     
-    float baseline;
-    float baselineRMS;
+    Float_t baseline;
+    Float_t baselineRMS;
     
-    bool longRoot;
+    Bool_t longRoot;
 };
 
 #endif // __ROOTDRIVER_H__

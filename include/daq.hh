@@ -27,17 +27,17 @@ public:
     event* readEvent(driver* dr);
     
 private:
-    long  readTimestamp();
-    int  readInt();
+    ULong64_t  readTimestamp();
+    Int_t  readInt();
     void readArrayHeader();
-    int readADCval(int read_int);
-    int readFlag(int read_int);
+    Int_t readADCval(Int_t read_int);
+    Int_t readFlag(Int_t read_int);
     
-    int  nEventPerArray;
-    int  nSample;
-    int  nEvent;
-    int  nByteRead;
-    int  nBytePerArray;
+    Int_t  nEventPerArray;
+    Int_t  nSample;
+    Int_t  nEvent;
+    Int_t  nByteRead;
+    Int_t  nBytePerArray;
     ifstream daqfile;
     event    *ev;
     

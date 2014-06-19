@@ -15,7 +15,7 @@ daq::daq(driver* dr){
 }
 
 
-inline int daq::readInt(){
+inline Int_t daq::readInt(){
     int16_t* int_buff(0);
     
     //    char *char0 = new char[NBYTE_PER_INT];
@@ -25,7 +25,7 @@ inline int daq::readInt(){
 
     daqfile.read(buff,NBYTE_PER_INT);
     int_buff = (int16_t*)buff;
-    int i1 = int_buff[0];
+    Int_t i1 = int_buff[0];
     //    if(daqfile.read(buff,NBYTE_PER_INT)) memcpy(&i1,buff,NBYTE_PER_INT);
     //    printf("%x %x %i \n",buff[0],buff[1],i1);
     //    delete char0;
@@ -35,13 +35,13 @@ inline int daq::readInt(){
     return i1;
 }
 
-inline int daq::readADCval(int i1){
-  int i1_adc = i1 >> 2;
+inline Int_t daq::readADCval(Int_t i1){
+  Int_t i1_adc = i1 >> 2;
   return i1_adc;
 }
 
-inline int daq::readFlag(int i1){
-  int flag = i1 & 0x0003;
+inline Int_t daq::readFlag(Int_t i1){
+  Int_t flag = i1 & 0x0003;
   return flag;
 }
 
@@ -55,43 +55,47 @@ void daq::readArrayHeader(){
     nByteRead += 4;
 }
 
-long daq::readTimestamp(){
-    int num16(32768);
-    long time_array[N_TIME_INT];
-    // read the timing information
-    for(int i=0; i<N_TIME_INT; i++){
-        time_array[i] = readInt();
-        if(time_array[i] < 0) time_array[i] = num16 + (num16 + time_array[i]);
-    }
-    
-    long timestamp = time_array[3] + (time_array[2]*(num16*2)) + (time_array[1]*(num16*2)*(num16*2)) + (time_array[0]*(num16*2)*(num16*2)*(num16*2));
-    
-    return timestamp;
+ULong64_t daq::readTimestamp() {
+  ULong64_t time_array[N_TIME_INT];
+  
+  for (Int_t i = 0; i < N_TIME_INT; i++) time_array[i] = readInt();
+
+  ULong64_t timestamp =   ( ((int64_t)  time_array[3])        & 0xFFFF ) | 
+                       ( (((int64_t) time_array[2]) << 16) & 0xFFFF0000 ) | 
+                       ( (((int64_t) time_array[1]) << 32) & 0xFFFF00000000 ) | 
+                       ( (((int64_t) time_array[0]) << 48) & 0xFFFF000000000000 );
+		       //printf("%016llX\n", timestamp);
+
+return timestamp;
 }
 
 event* daq::readEvent(driver* dr) {
 
     // read the channel number
     //int ichan = (readInt()>>2) - CHANNEL_OFFSET;
-    int i1, ichan, chanflag;
+    Int_t i1, ichan, chanflag;
     i1 = readInt();
     ichan = readADCval(i1);
     ichan -= CHANNEL_OFFSET;
     chanflag = readFlag(i1);
+    //cout << "Channel = " << ichan << " flag = " << chanflag << endl;
     if (chanflag != 1) cout << "Warning in daq::readEvent: Start bit not in correct place" << endl;
+    if (chanflag != 1) cout << "Channel = " << ichan << " flag = " << chanflag << endl;
+    
 
-    long timestamp = readTimestamp();
+    ULong64_t timestamp = readTimestamp();
+    //if (chanflag != 1) cout << timestamp << endl;
     //cout << "Before we define trace" << endl;
     // read the trace
-    vector<double> *trace = new vector<double>();
-    bool isTestPulse = false;
-    int ival, flag;
-//    cout <<"NEXT"<<endl;
-    for(int i=0; i<nSample; i++){
+    vector<Double_t> *trace = new vector<Double_t>();
+    Bool_t isTestPulse = false;
+    Int_t ival, flag;
+    //cout <<"NEXT"<<endl;
+    for(Int_t i=0; i<nSample; i++){
         i1 = readInt();
 	ival = readADCval(i1);
-//        cout <<i <<" "<<ival<<endl; 
-        trace->push_back((double)ival);
+        //if (chanflag != 1) cout <<i <<" "<<ival<<endl; 
+        trace->push_back((Double_t)ival);
 	flag = readFlag(i1);
 	if (flag == 3) isTestPulse = true;
     }

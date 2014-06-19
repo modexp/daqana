@@ -6,6 +6,7 @@
 #include "driver.hh"
 #include <vector>
 #include <stdlib.h>
+#include <stdint.h>
 
 // N_baseline_calc = nPreTrigger - N_BASELINE_NOT_USED
 #define N_BASELINE_NOT_USED 5
@@ -16,37 +17,37 @@ class event
 {
 public:
     event();
-    event(int iev, int ich, long ts, vector<double>* tr, bool isTestPulse, driver* dr);
+    event(Int_t iev, Int_t ich, ULong64_t ts, vector<Double_t>* tr, Bool_t isTestPulse, driver* dr);
     ~event();
     // initialize: calculate baseline, correct for baseline, find peak, calculate area
     void InitializeEvent();
     void Plot();
     //~event();
-    int         getChannel(){return ichannel;};
-    vector<double>* getTrace() {return trace;};
-    double      getPeak()  {return peak;};
-    double      getArea()  {return area;};
-    long        getTimeStamp() {return timestamp;};
-    double      getBaseline() {return baseline;};
-    bool 	getIsTestPulse() {return iLED;};
-    double      calculateBaselineRMS();
-    double      calculateBaseline();
-    double      calculatePeak();
-    double      calculateIntegral();
-    double      calculatePeakAndIntegral();
+    Int_t         getChannel(){return ichannel;};
+    vector<Double_t>* getTrace() {return trace;};
+    Double_t      getPeak()  {return peak;};
+    Double_t      getArea()  {return area;};
+    ULong64_t        getTimeStamp() {return timestamp;};
+    Double_t      getBaseline() {return baseline;};
+    Bool_t 	getIsTestPulse() {return iLED;};
+    Double_t      calculateBaselineRMS();
+    Double_t     calculateBaseline();
+    Double_t      calculatePeak();
+    Double_t      calculateIntegral();
+    Double_t      calculatePeakAndIntegral();
 private:
-    int         ievent;
-    int         ichannel;
-    long        timestamp;
-    vector<double>* trace;
-    int 	iLED;
-    double      baseline;
-    double      baselineRMS;
-    int         nBaselineCalc;
-    double      area;
-    double      peak;
-    float nDeltaT;
-    int nDataPoints;
+    Int_t         ievent;
+    Int_t         ichannel;
+    ULong64_t        timestamp;
+    vector<Double_t>* trace;
+    Int_t 	iLED;
+    Double_t      baseline;
+    Double_t      baselineRMS;
+    Int_t         nBaselineCalc;
+    Double_t      area;
+    Double_t      peak;
+    Float_t nDeltaT;
+    Int_t nDataPoints;
 };
 
 #endif // __EVENT_H__

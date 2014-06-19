@@ -8,7 +8,7 @@
 
 rootdriver::rootdriver(){}
 
-rootdriver::rootdriver(driver *drv, bool tmpbool){
+rootdriver::rootdriver(driver *drv, Bool_t tmpbool){
     longRoot = tmpbool;
     
     // initialize the Branch variables
@@ -31,7 +31,7 @@ rootdriver::rootdriver(driver *drv, bool tmpbool){
     tree->Branch("integral", &integral, "integral/F");
     tree->Branch("height", &pkheight, "height/F");
     tree->Branch("time", &timestamp, "time/L");
-    tree->Branch("istestpulse", &isTestPulse, "istestpulse/bool");
+    tree->Branch("istestpulse", &isTestPulse, "istestpulse/Bool_t");
     tree->Branch("error", &errorCode, "error/I");
     
     if(longRoot){
@@ -71,26 +71,26 @@ void rootdriver::writeParameters(driver *drv){
     Parameter->Write();
     
     // the integer parameters
-    TParameter<int> *intPar = new TParameter<int>("nsamples",drv->getNSample());
+    TParameter<Int_t> *intPar = new TParameter<Int_t>("nsamples",drv->getNSample());
     intPar->Write();
-    intPar = new TParameter<int>("npretrigger",drv->getNPreTrigger());
+    intPar = new TParameter<Int_t>("npretrigger",drv->getNPreTrigger());
     intPar->Write();
-    intPar = new TParameter<int>("nevent",drv->getNEvent());
+    intPar = new TParameter<Int_t>("nevent",drv->getNEvent());
     intPar->Write();
-    intPar = new TParameter<int>("nheader",drv->getNHeader());
+    intPar = new TParameter<Int_t>("nheader",drv->getNHeader());
     intPar->Write();
-    intPar = new TParameter<int>("chunksize",drv->getArraySize());
+    intPar = new TParameter<Int_t>("chunksize",drv->getArraySize());
     intPar->Write();
-    intPar = new TParameter<int>("eventsize",drv->getEventSize());
+    intPar = new TParameter<Int_t>("eventsize",drv->getEventSize());
     intPar->Write();
     // the double parameters
-    TParameter<double> *dblPar = new TParameter<double>("deltat",drv->getDeltaT());
+    TParameter<Double_t> *dblPar = new TParameter<Double_t>("deltat",drv->getDeltaT());
     dblPar->Write();
 
     // sources in separate folder
     TDirectory *_sources = _info->mkdir("source");
     _sources->cd();
-    for(int i=0; i<8; i++) {
+    for(Int_t i=0; i<8; i++) {
         sprintf(pName,"channel_%i",i);
         Parameter = new TNamed(pName,drv->getSource(i).c_str());
         Parameter->Write();
@@ -99,7 +99,7 @@ void rootdriver::writeParameters(driver *drv){
     // serial numbers in separate folder
     TDirectory *_serial = _info->mkdir("serial");
     _serial->cd();
-    for(int i=0; i<8; i++) {
+    for(Int_t i=0; i<8; i++) {
         sprintf(pName,"channel_%i",i);
         Parameter = new TNamed(pName,drv->getDetectorSerial(i).c_str());
         Parameter->Write();
@@ -108,7 +108,7 @@ void rootdriver::writeParameters(driver *drv){
     // active channels in separate folder
     TDirectory *_active = _info->mkdir("active");
     _active->cd();
-    for(int i=0; i<8; i++) {
+    for(Int_t i=0; i<8; i++) {
         sprintf(pName,"channel_%i",i);
         Parameter = new TNamed(pName,drv->getActiveChannel(i).c_str());
         Parameter->Write();
@@ -117,18 +117,18 @@ void rootdriver::writeParameters(driver *drv){
     // trigger levels in separate folder
     TDirectory *_trigger = _info->mkdir("trigger");
     _trigger->cd();
-    for(int i=0; i<8; i++) {
+    for(Int_t i=0; i<8; i++) {
         sprintf(pName,"channel_%i",i);
-        dblPar = new TParameter<double>(pName,drv->getTriggerLevel(i));
+        dblPar = new TParameter<Double_t>(pName,drv->getTriggerLevel(i));
         dblPar->Write();
     }
     
     // PMT HV levels in separate folder
     TDirectory *_hv = _info->mkdir("hv");
     _hv->cd();
-    for(int i=0; i<8; i++) {
+    for(Int_t i=0; i<8; i++) {
         sprintf(pName,"channel_%i",i);
-        dblPar = new TParameter<double>(pName,drv->getPMTvoltage(i));
+        dblPar = new TParameter<Double_t>(pName,drv->getPMTvoltage(i));
         dblPar->Write();
     }
     
