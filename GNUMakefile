@@ -8,4 +8,5 @@ daqana: $(CFILES)
 clean:
 	rm -f *.o
 	rm daqana
+	rm daqana.exe
 
