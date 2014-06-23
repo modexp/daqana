@@ -12,6 +12,8 @@ parser=argparse.ArgumentParser()
 INT_SIZE    = int(2) # an integere is 2-bytes
 HEADER_SIZE = int(4) # NOTE: this is the header of an array. not the header of an event
 MAX_NB_PROCESSES = int(4) # test for now, have 4 processors running on each of the 4 cores
+NUM_CHANNELS = int(8) # num of fast data channels
+
 ###############################################################################
 
 #
