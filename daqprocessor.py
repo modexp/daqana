@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 from xml.dom.minidom import parse, parseString
 import os, glob, math, getopt, sys
 
@@ -125,35 +126,26 @@ def generateDriverFile(outdir,filename):
     fdaq.write(str(event_size) + '\n')
     fdaq.write(str(nEvent) + '\n')
     
-    print 'XML::read active_channels ...'
-    active_channels = parseString(dom.getElementsByTagName('active_channels')[0].toxml())
-    for i in range(0,8):
-        fdaq.write( getSingleElement(active_channels,'channel_'+str(i)) + '\n')
-    
-    print 'XML::read det_serials ...'
-    det_serials = parseString(dom.getElementsByTagName('serial_numbers')[0].toxml())
-    for i in range(0,8):
-        fdaq.write(getSingleElement(det_serials,'channel_'+str(i))+ '\n')
-    
-    print 'XML::read det_types ...'
-    det_types = parseString(dom.getElementsByTagName('det_type')[0].toxml())
-    for i in range(0,8):
-        fdaq.write( getSingleElement(det_types,'channel_'+str(i))+ '\n')
-    
-    print 'XML::read sources ...'
-    sources = parseString(dom.getElementsByTagName('sources')[0].toxml())
-    for i in range(0,8):
-        fdaq.write( getSingleElement(sources,'channel_'+str(i))+ '\n')
-    
-    print 'XML::read trigger_levels ...'
-    trigger_levels = parseString(dom.getElementsByTagName('trigger_level')[0].toxml())
-    for i in range(0,8):
-        fdaq.write( getSingleElement(trigger_levels,'channel_'+str(i))+ '\n')
-    
-    print 'XML::read PMT_voltages ...'
-    PMT_voltages = parseString(dom.getElementsByTagName('voltage')[0].toxml())
-    for i in range(0,8):
-        fdaq.write( getSingleElement(PMT_voltages,'channel_'+str(i))+ '\n')
+    print 'XML::read channel attributes ...'
+    channel_info = dom.getElementsByTagName('channel')
+    for i in range(0,NUM_CHANNELS):
+	active_channel = parseString(channel_info[i].toxml())
+	index = getSingleElement(active_channel, 'index')
+	print 'XML:: reading channel: ', index, ' ...'
+	##fdaq.write(index + '\n') # write channel index (0-7)
+	print 'XML:: channel ', index, ': ', getSingleElement(active_channel, 'active'), ' ...'
+	fdaq.write(getSingleElement(active_channel, 'active') + '\n') # write channel status (on/off)
+	print 'XML:: channel ', index, ' serial number: ', getSingleElement(active_channel, 'serial_numbers'), ' ...'
+	fdaq.write(getSingleElement(active_channel, 'serial_numbers') + '\n') # write serial number
+	print 'XML:: channel ', index, ' detector type: ', getSingleElement(active_channel, 'det_type'), ' ...'
+	fdaq.write(getSingleElement(active_channel, 'det_type') + '\n') # write detector type
+	print 'XML:: channel ', index, ' source: ', getSingleElement(active_channel, 'sources'), ' ...'
+	fdaq.write(getSingleElement(active_channel, 'sources') + '\n') # write source
+	print 'XML:: channel ', index, ' trigger level: ', getSingleElement(active_channel, 'trigger_level'), ' ...'
+	fdaq.write(getSingleElement(active_channel, 'trigger_level') + '\n') # write trigger level
+	print 'XML:: channel ', index, ' PMT voltage: ', getSingleElement(active_channel, 'voltage'), ' ...'
+	fdaq.write(getSingleElement(active_channel, 'voltage') + '\n') # write voltage
+
     fdaq.close
 
     return daqfile
