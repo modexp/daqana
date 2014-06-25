@@ -3,16 +3,11 @@
 from xml.dom.minidom import parse, parseString
 import os, glob, math, getopt, sys
 
-import argparse #neat argument parser
-parser=argparse.ArgumentParser()
-
-
 ###############################################################################
 
 INT_SIZE    = int(2) # an integere is 2-bytes
 HEADER_SIZE = int(4) # NOTE: this is the header of an array. not the header of an event
 MAX_NB_PROCESSES = int(4) # test for now, have 4 processors running on each of the 4 cores
-NUM_CHANNELS = int(8) # num of fast data channels
 
 ###############################################################################
 
@@ -20,15 +15,44 @@ NUM_CHANNELS = int(8) # num of fast data channels
 # FUNCTIONS (main below....)
 #
 
+
+# interpret the command line arguments
+def parseArguments(argv):
+    inDir     = ''
+    outDir    = ''
+    grafOn    = 0
+    longRoot  = 0
+    slowOn    = 0
+    fastOn    = 0
+    try:
+        opts, args = getopt.getopt(argv,"hlgsfi:o:",["long","graf","slow","fast","idir=","odir="])
+    except getopt.GetoptError:
+        print 'daqprocessor.py -i <inputfile> -o <outputfile> -g -s -f'
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print 'daqprocessor.py -i <input dir> -o <output dir> -g'
+            sys.exit()
+        elif opt in ("-i", "--idir"):
+            inDir = arg
+        elif opt in ("-o", "--odir"):
+            outDir = arg
+        elif opt in ("-g","--graf"):
+            grafOn = 1
+        elif opt in ("-l","--long"):
+            longRoot = 1
+
+    return inDir, outDir, grafOn, longRoot
+
 # function to retreive a single parameter from the xml file
 def getSingleElement(dom,eName):
     val = "-1"
     theNodes=dom.getElementsByTagName(eName)
     for node in theNodes:
         if(node.firstChild):
-            inval=node.firstChild.data
-            if inval !="--" or inval!="xx":
-                val = node.firstChild.data
+          val = node.firstChild.data
+    if(val == "--" or val == "xx"):
+       val= "-1"
     return val
 
 # retrieve the names of all binary files in a directory
@@ -38,15 +62,37 @@ def getFilenames(fbase):
 
 # retrieve the name of the xml file
 def getXMLFilename(fname):
-    fb=fname[:-11]+'.XML'
-    print '    XML file  = ' + fb
-    return fb
+    arr = fname.split('_')
+    # start with first element
+    fb =arr[0]
+    # only reomve the last bit with the 0000n.bin from the filename
+    for i in range(1,len(arr)-1):
+      fb = fb + '_' + arr[i]
+
+    # compose the xml name
+    XMLname = fb+'.XML'
+    print '    XML file  = ' + XMLname
+    return XMLname
+    
+# retrieve the name of the slow file
+def getSlowFilename(fname):
+    arr = fname.split('_')
+    # start with first element
+    fb =arr[0]
+    # only reomve the last bit with the 0000n.bin from the filename
+    for i in range(1,len(arr)-1):
+      fb = fb + '_' + arr[i]
+
+    # compose the xml name
+    slowname = fb+'.slo'
+    print '    Slow file  = ' + slowname
+    return slowname
 
 # make the name of the daq file
 def getDAQFilename(outdir,fname):
     arr = fname.split('/')
     # get the last element
-    fb = arr[-1]
+    fb = arr[len(arr)-1]
     # compose the xml name
     DAQname = outdir+'/'+fb+'.tmp'
     print '    DAQ file  = ' + DAQname
@@ -54,10 +100,14 @@ def getDAQFilename(outdir,fname):
 
 # make the output root filename
 def rootFilename(outdir,datafile):
-    fb = datafile.split('/')[-1]
+    arr = datafile.split('/')
+    # get the last element
+    fb = arr[len(arr)-1]
+    # compose the root filename
     froot = outdir + '/' + fb + '.root'
     print '    ROOT file = ' + froot
     return froot
+    
 
 # calculate the relevant numbers from the file
 def calculateNumberOfEvents(filename,array_size,event_size):
@@ -160,18 +210,12 @@ def generateDriverFile(outdir,filename):
 
 print 'MAIN:: Welcome to the modulation daq-processor...'
 # parse the IO arguments below
-parser.add_argument("idir", help="use specific input directory")
-parser.add_argument("odir", help="use specific ouput directory")
-parser.add_argument("-g","--graf", help="grafOn",action="store_true")
-parser.add_argument("-l","--long", help="longRoot",action="store_true")
-args=parser.parse_args()
-filebase, outdir = args.idir, args.odir
-grafOn, longRoot = args.graf, args.long
+filebase, outdir, grafOn, longRoot = parseArguments(sys.argv[1:])
 
 #  get the files from the data directory
 filenames = getFilenames(filebase)
 nb_files = len(filenames)
-
+  
 cmds_to_ex = []
 child_pids = []
 
