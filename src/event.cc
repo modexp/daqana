@@ -16,7 +16,7 @@ event::event(Int_t iev, Int_t ich, ULong64_t ts, vector<Double_t>* tr, Bool_t is
     // trace info
     trace = tr;
     // test pulse info
-    isTestPulse = iLED;
+    iLED = isTestPulse;
     // number of pre-trigger samples
     nBaselineCalc = dr->getNPreTrigger() - N_BASELINE_NOT_USED;
     // initialize the event.... calculate baseline, peak, integral
@@ -72,7 +72,7 @@ Double_t event::calculatePeak(){
 Double_t event::calculateIntegral(){
     
     Double_t I = 0;
-    for(int i=0; i<trace->size(); i++){
+    for(Int_t i=0; i<trace->size(); i++){
         Double_t val = trace->at(i);
         I+=val;
     }
@@ -90,35 +90,41 @@ Double_t event::calculateIntegral(){
 //the following function assumes only 1 peak (the last one) at the moment and only calulates the integral.
 //future function should also calculate the peak heigh, to save on time looping over wf.
 
-Double_t event::calculatePeakAndIntegral(){
+Double_t event::calculatePeakAndIntegral() {
+  Int_t maxPos = 0;
+  Double_t max(0);
+  Int_t i = 0;
+  while (i < nDataPoints) {
+      if ((trace->at(i)-baseline) > max) {
+	  max = trace->at(i);
+	  maxPos = i;
+      }
+      i++;
+  }
+  Double_t threshold = 0.5*(1-FRACTION);
+  Double_t integral(0);
+  
+  // Find Start
+  Int_t x = maxPos;
+  //Double_t max = trace->at(maxPos);
+  while (x>0 && (trace->at(x)-baseline) > threshold*max) x--;
+  Int_t start = x;
+  
 
-    Double_t I = 0;
-    Float_t preamp=0.;
-    Float_t amp = 0.;
-    
-    Bool_t htflag = false;
-    
-    Int_t ht = 1000.; //some random value
-    Int_t lt = 100.; //some other random value
-    
-    for(Int_t i=0; i<trace->size(); i++){ //go over all ze bins
-        amp = trace->at(i) - baseline;
-        
-        if (amp>lt){ //made it over lt, start counting stuff
-            preamp+=amp; //it might not make it over ht, so use a different variable
-            
-            if (amp>ht) { //it can now count as a peak
-                htflag = true; //save the fact its officially a peak
-                }}
-        
-        else{ //no longer above lt
-            if (htflag) { // but did reach above ht
-                I=preamp; // assign the value to the integral
-                preamp=0.;
-            }}}
-    
-    return I;
-    
+  // Find Stop
+  x = maxPos;
+  while (x<nDataPoints && (trace->at(x)-baseline) > threshold*max) x++;
+  Int_t stop = x;
+ 
+  // For every point that falls between the start and stop positions, calculate the integral using the trapezoid rule
+  for (x = start; x<stop-1; x++)
+    {
+      integral += ( 0.5*(trace->at(x+1) + trace->at(x)))-baseline; 
+    }
+  integral*= 2./(TMath::Power(2,16)-1.); // convert from labview units to volts
+  integral*=nDeltaT;
+  
+  return integral;
 }
 
 event::~event() {
@@ -127,10 +133,10 @@ event::~event() {
 }
 
 // Plot a TGraph of one pulse with the baseline in red, for debugging purposes
-void event::Plot()
+void event::Plot(TCanvas *canv)
 {
     // Graphs for plotting individual pulses
-    TCanvas *canv = new TCanvas("c1","c1",0,0,450,450); // just for plotting individual pulses, can comment out if need
+    //TCanvas *canv = new TCanvas("c1","c1",0,0,450,450); // just for plotting individual pulses, can comment out if need
     TGraph *voltages = new TGraph();
     TGraph* g_base = new TGraph();
     
@@ -139,7 +145,8 @@ void event::Plot()
         voltages->SetPoint(m, m*nDeltaT, trace->at(m));
         g_base->SetPoint(m, m*nDeltaT, baseline);
     }
-    
+    canv->Clear();
+    canv->Flush();
     voltages->Draw("AL");
     g_base->SetLineColor(2);
     g_base->Draw("same");
@@ -147,12 +154,32 @@ void event::Plot()
     char tstr[100];
     sprintf(tstr,"Event = %i",ievent);
     if (iLED == true) cout << "This event was a test pulse from the LED" << endl;
+    //cout << "Integral: " << integral << endl;
+    cout << "Baseline: " << baseline << endl;
     canv->SetTitle(tstr);
     canv->Modified();
     canv->Update();
-    char pdfname[256];
-    sprintf(pdfname,"pdf/shape_%i.pdf",ievent);
-    canv->Print(pdfname);
-    usleep(100000);
+    //char pdfname[256];
+    //sprintf(pdfname,"pdf/shape_%i.pdf",ievent);
+    //canv->Print(pdfname);
+    usleep(1000000);
+    //canv->Close();
+    //delete voltages;
+    //delete g_base;
 
+}
+
+slowevent::slowevent(){}
+
+slowevent::slowevent(Int_t sid, Double_t sd, ULong64_t sts){
+  // slow id (identifies parameter type, e.g. temperature, pressure, etc.)
+    slowid = sid;
+    // actual data
+    slowdata = sd;
+    // slow timestamp
+    slowtimestamp = sts;
+}
+
+slowevent::~slowevent() {
+  // nothing to do here
 }

@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "TROOT.h"
 #include <stdint.h>
-#include <TROOT.h>
 
 using namespace std;
 
@@ -17,6 +17,7 @@ public:
     ~driver();
     string getDataFile(){return DataFile;};
     string getRootFile(){return RootFile;};
+    string getSlowFile(){return SlowFile;};
     string getLocation(){return location;};
     Double_t getDeltaT(){return delta_t;};
     Int_t    getNSample(){return nSample;};
@@ -25,15 +26,19 @@ public:
     Int_t    getArraySize(){return ArraySize;};
     Int_t    getEventSize(){return EventSize;};
     Int_t    getNEvent(){return nEvent;};
-    string getActiveChannel(int ichan){return active_channels[ichan];}; 
-    string getDetectorSerial(int ichan){return det_serials[ichan];};
-    string getDetectorType(int ichan){return det_types[ichan];};
-    string getSource(int ichan){return sources[ichan];};
-    Float_t  getTriggerLevel(int ichan){return trigger_levels[ichan];};
-    Float_t  getPMTvoltage(int ichan){return PMT_voltages[ichan];};
+    Int_t    getNSlowParams(){return nSlow;}
+    ULong64_t 	getInitialTime(){return initial_time;}
+    string getActiveChannel(Int_t ichan){return active_channels[ichan];}; 
+    string getDetectorSerial(Int_t ichan){return det_serials[ichan];};
+    string getDetectorType(Int_t ichan){return det_types[ichan];};
+    string getSource(Int_t ichan){return sources[ichan];};
+    Float_t  getTriggerLevel(Int_t ichan){return trigger_levels[ichan];};
+    Float_t  getPMTvoltage(Int_t ichan){return PMT_voltages[ichan];};
+    string getSlowBranchName(Int_t slowchan){return slowbranch_names[slowchan];};
 private:
     string DataFile;
     string RootFile;
+    string SlowFile;
     string location;
     Double_t delta_t;
     Int_t    nSample;
@@ -42,12 +47,15 @@ private:
     Int_t    ArraySize;
     Int_t    EventSize;
     Int_t    nEvent;
+    Int_t    nSlow;
+    ULong64_t 	initial_time;
     vector<string> active_channels;
     vector<string> det_serials;
     vector<string> det_types;
     vector<string> sources;
     vector<Float_t>  trigger_levels;
     vector<Float_t>  PMT_voltages;
+    vector<string> slowbranch_names;
 };
 
 #endif // __DRIVER_H__

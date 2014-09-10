@@ -8,7 +8,7 @@ import os, glob, math, getopt, sys
 INT_SIZE    = int(2) # an integere is 2-bytes
 HEADER_SIZE = int(4) # NOTE: this is the header of an array. not the header of an event
 MAX_NB_PROCESSES = int(4) # test for now, have 4 processors running on each of the 4 cores
-NUM_CHANNELS = int(8)
+NUM_CHANNELS = int(8) # number of fast data channels (i.e. how many NaI detectors there are)
 
 ###############################################################################
 
@@ -42,8 +42,12 @@ def parseArguments(argv):
             grafOn = 1
         elif opt in ("-l","--long"):
             longRoot = 1
+        elif opt in ("-s", "--slow"):
+	    slowOn = 1
+	elif opt in ("-f", "--fast"):
+	    fastOn = 1
 
-    return inDir, outDir, grafOn, longRoot
+    return inDir, outDir, grafOn, longRoot, slowOn, fastOn
 
 # function to retreive a single parameter from the xml file
 def getSingleElement(dom,eName):
@@ -142,6 +146,7 @@ def generateDriverFile(outdir,filename):
     #
     
     # parse the DAQ xml file
+    slowfile = getSlowFilename(filename)
     print 'XML::parsing ...'
     xmlfile = getXMLFilename(filename)
     dom     = parse(xmlfile)
@@ -163,14 +168,18 @@ def generateDriverFile(outdir,filename):
     array_size   = int(chunk_size)*int(event_size)
 
     location     = getSingleElement(dom,'location')
+    
+    initial_time 	= getSingleElement(dom, 'initial_timestamp')
 
     #  get the nEvent and nEventPerArray from the file information
     print 'XML::calculate number of events ...'
     nEvent= calculateNumberOfEvents(filename, array_size, event_size)
     fdaq = open(daqfile,'w')
     fdaq.write(filename + '\n')
+    fdaq.write(slowfile + '\n')
     fdaq.write(rootfile + '\n')
     fdaq.write(location +'\n')
+    fdaq.write(initial_time + '\n')
     fdaq.write(delta_t + '\n')
     fdaq.write(n_sample + '\n')
     fdaq.write(n_pretrigger + '\n')
@@ -198,6 +207,20 @@ def generateDriverFile(outdir,filename):
 	fdaq.write(getSingleElement(active_channel, 'trigger_level') + '\n') # write trigger level
 	print 'XML:: channel ', index, ' PMT voltage: ', getSingleElement(active_channel, 'voltage'), ' ...'
 	fdaq.write(getSingleElement(active_channel, 'voltage') + '\n') # write voltage
+        
+    print 'XML:: read slow params ...'
+    nSlowParams   = getSingleElement(dom,'num_params')
+    nSlow = nSlowParams
+    fdaq.write(nSlow + '\n')
+    nSlow = int(float(nSlow));
+    print 'XML:: read ', nSlowParams, ' total slow parameters'
+    slowparam = dom.getElementsByTagName('slow')
+    for i in range(0,nSlow):
+	slow_chan = parseString(slowparam[i].toxml())
+	branchname = getSingleElement(slow_chan, 'slowbranch')
+	fdaq.write(branchname + '\n')
+	print 'XML:: including branch ', branchname, ' ...'
+	
 
     fdaq.close
 
@@ -211,7 +234,7 @@ def generateDriverFile(outdir,filename):
 
 print 'MAIN:: Welcome to the modulation daq-processor...'
 # parse the IO arguments below
-filebase, outdir, grafOn, longRoot = parseArguments(sys.argv[1:])
+filebase, outdir, grafOn, longRoot, slowOn, fastOn = parseArguments(sys.argv[1:])
 
 #  get the files from the data directory
 filenames = getFilenames(filebase)
@@ -223,58 +246,65 @@ child_pids = []
 # split files into nb_processes lists
 split_file_ids = dict([[process_nb, []] for process_nb in range(0, MAX_NB_PROCESSES)])
 for file_id in range(0, nb_files):
-    split_file_ids[file_id % MAX_NB_PROCESSES].append(file_id)
+  split_file_ids[file_id % MAX_NB_PROCESSES].append(file_id)
 
 # run on all the binary files in the input directory
 for process_nb in range(MAX_NB_PROCESSES):
     # fork into desired number of processes
     print 'I am at process # ', process_nb
-    try:
-        # forking will produce both a child and a parent process starting here.  if the process is a child, it will return 0, if the process is a parent, it will return the PID of its child
-        pid = os.fork()
-        
-        if pid: # this is the parent so push the children on a stack
-            child_pids.append(pid)
+    try: 
+      # forking will produce both a child and a parent process starting here.  if the process is a child, it will return 0, if the process is a parent, it will return the PID of its child
+      pid = os.fork()
+      
+      if pid: # this is the parent so push the children on a stack
+	child_pids.append(pid)
         #print 'This is a parent, so the child\'s pid is: ', pid
-        
-        else: # this is a child
-            #print 'I am a child, my pid is:  ', os.getpid()
-            # for the number of files we want to split across the number of cores, process each file
-            for file_id in split_file_ids[process_nb]:
-                
-                # generate driver file
-                filename = filenames[file_id]
-                daqfile = generateDriverFile(outdir,filename)
-                
-                cmd_string = './daqana -i ' + daqfile
-                if(grafOn):
-                    cmd_string += ' -g'
-                if(longRoot):
-                    cmd_string += ' -l'
-        
-                cmds_to_ex.append(cmd_string)
-                print 'MAIN:: Processing ' + filename
-                os.system(cmd_string)
-                print 'MAIN:: Processing complete for ' + filename
-                print 'MAIN:: Remove ' + daqfile
-                cmd_string = 'rm -f ' + daqfile
-                os.system(cmd_string)
-            sys.exit(0)
-    
 	
-    except OSError:
-        print 'error: couldn\'t fork!'
+      else: # this is a child
+        #print 'I am a child, my pid is:  ', os.getpid()
+             # for the number of files we want to split across the number of cores, process each file
+	for file_id in split_file_ids[process_nb]:
+
+	    # generate driver file
+	    filename = filenames[file_id]
+	    daqfile = generateDriverFile(outdir,filename)
+   
+	    cmd_string = './daqana -i ' + daqfile
+	    if(grafOn):
+	      cmd_string = cmd_string + ' -g'
+	    if(longRoot):
+	      cmd_string = cmd_string + ' -l'
+	    if(slowOn):
+	      cmd_string = cmd_string + ' -s'
+	    if(fastOn):
+	      cmd_string = cmd_string + ' -f'
+	    if((not fastOn) and (not slowOn)):
+	      print 'MAIN:: User did not specify which data to parse, parsing slow data'
+	      cmd_string = cmd_string + ' -s'
+        
+	    cmds_to_ex.append(cmd_string)
+	    print 'MAIN:: Processing ' + filename
+	    os.system(cmd_string)
+	    print 'MAIN:: Processing complete for ' + filename
+	    print 'MAIN:: Remove ' + daqfile
+	    cmd_string = 'rm -f ' + daqfile
+	    os.system(cmd_string)
         sys.exit(0)
 
+	
+    except OSError:
+      print 'error: couldn\'t fork!'
+      sys.exit(0)
+      
 for child in child_pids:
-    try: 
-        os.waitpid(child, 0)
-    except KeyboardInterrupt:
-        for child in child_pids:
-            os.kill(child, signal.SIGTERM)
-            sys.exit(0)
+  try: 
+    os.waitpid(child, 0)
+  except KeyboardInterrupt:
+      for child in child_pids:
+	os.kill(child, signal.SIGTERM)
+	sys.exit(0)
 
-# execute the daqana command with the right arguments
+    # execute the daqana command with the right arguments
 
 print 'MAIN:: Exit from the daq-processor. bye-bye.'
 

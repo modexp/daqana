@@ -10,8 +10,10 @@ driver::driver(string f){
     fin.open(f.c_str());
     // get all info from the temporary info file.....
     fin >> DataFile;
+    fin >> SlowFile;
     fin >> RootFile;
     fin >> location;
+    fin >> initial_time;
     fin >> delta_t;
     fin >> nSample;
     fin >> nPreTrigger;
@@ -21,37 +23,32 @@ driver::driver(string f){
     fin >> nEvent;
 
     string aa;
-    // active channels
+    Float_t ff;
+
     for(Int_t i=0; i<8; i++) {
+	//  active channels
         fin >>aa;
         active_channels.push_back(aa);
-    }
-    // detector serial numbers
-    for(Int_t i=0; i<8; i++) {
+	//  serial numbers
         fin >>aa;
         det_serials.push_back(aa);
-    }
-    // detector type
-    for(Int_t i=0; i<8; i++) {
+	//  detector types
         fin >>aa;
         det_types.push_back(aa);
-    }
-    
-    // sources
-    for(Int_t i=0; i<8; i++) {
+	// sources
         fin >>aa;
         sources.push_back(aa);
-    }
-    Float_t ff;
-    // trigger level
-    for(Int_t i=0; i<8; i++) {
+	// trigger level
         fin >>ff;
         trigger_levels.push_back(ff);
-    }
-    // PMT voltage
-    for(Int_t i=0; i<8; i++) {
+	// PMT voltage
         fin >>ff;
         PMT_voltages.push_back(ff);
+    }
+    fin >> nSlow;
+    for (Int_t i = 0; i< nSlow; i++) {
+	fin >> aa;
+	slowbranch_names.push_back(aa);
     }
     
     fin.close();
