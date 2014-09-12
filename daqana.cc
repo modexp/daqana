@@ -54,7 +54,7 @@ int main(int argc, char **argv)
       daq myDaq(myDriver);
       // root management
       rootdriver myRoot(myDriver, longRoot, slowOn, fastOn);
-      long new_stime;
+      ULong64_t new_stime;
       
       // loop over the events
       int totalnumberofevents = myDriver->getNEvent();
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 	  int totalslowevents = myDaq.GetSlowFileSize();
 	  cout << " I think there are " << totalslowevents << " slow events" << endl;
 	  //totalslowevents /= myDriver->getNSlowParams();
-	  long old_stime = 0;
+	  ULong64_t old_stime = 0;
 	
 	  for (int iSlowEv = 0; iSlowEv < totalslowevents; iSlowEv++){
 	      sev = myDaq.readSlowEvent();
