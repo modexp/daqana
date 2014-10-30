@@ -28,8 +28,8 @@ public:
     //~daq();
     //void daqClose();
     event* readEvent(driver* dr);
-    slowevent* readSlowEvent();
-    Int_t   GetSlowFileSize();
+    //slowevent* readSlowEvent();
+    //Int_t   GetSlowFileSize();
     
 private:
     Double_t  readTimestamp();
@@ -38,21 +38,21 @@ private:
     Int_t   readADCval(Int_t i1);
     Int_t   readFlag(Int_t i1);
     void  readArrayHeader();
-    Double_t readDouble();
-    ULong64_t readU64();
+    //Double_t readDouble();
+    //ULong64_t readU64();
     
     Int_t  nEventPerArray;
     Int_t  nSample;
     Int_t  nEvent;
     Int_t  nByteRead;
-    Int_t  slowByteRead;
+    //Int_t  slowByteRead;
     Int_t  nBytePerArray;
     ULong64_t	initial_timestamp;
     Double_t	deltat;
     ifstream daqfile;
-    ifstream slowfile;
+    //ifstream slowfile;
     event    *ev;
-    slowevent *sev;
+    //slowevent *sev;
     
 };
 

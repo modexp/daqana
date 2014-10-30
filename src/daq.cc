@@ -6,16 +6,16 @@ daq::daq(driver* dr){
     // open binary data file
     daqfile.open(dr->getDataFile().c_str(), ios::binary | ios::in);
     // get some important variables from the driver....
-    slowfile.open(dr->getSlowFile().c_str(),ios::binary | ios::in);
+    //slowfile.open(dr->getSlowFile().c_str(),ios::binary | ios::in);
     nBytePerArray  = dr->getArraySize();
     nSample        = dr->getNSample();
     initial_timestamp = dr->getInitialTime();
+    //initial_timestamp = 3618500646;
     cout << "The initial time is: " << initial_timestamp << endl;
-    //initial_timestamp = 3612724989;
     deltat = dr->getDeltaT();
     // counter for the number of bytes that have been read
     nByteRead      = 0;
-    slowByteRead   = 0;
+    //slowByteRead   = 0;
     // counter for the number of processed events
     nEvent = 0;
 }
@@ -114,7 +114,7 @@ event* daq::readEvent(driver* dr) {
     
     return newEv;
 }
-
+/*
 Int_t daq::GetSlowFileSize(){
     slowfile.seekg(0, ios::end);
     Int_t file_length = slowfile.tellg();
@@ -124,7 +124,8 @@ Int_t daq::GetSlowFileSize(){
     cout << "I think the slow file size is: " << file_length << endl;
     return file_length;
 }
-
+*/
+/*
 inline Double_t daq::readDouble(){
     Double_t* dbl_buff(0);
     
@@ -170,12 +171,15 @@ slowevent* daq::readSlowEvent(){
   // read time stamp
   stime = readU64();
   
+  cout << "slowid: " << slowid << " data: " << sdata << " stime: " << stime << endl;
+  
   slowevent* sev = new slowevent(slowid, sdata, stime);
   
   
   return sev;
   
 }
+*/
 /*
 void daq::daqClose(){
   

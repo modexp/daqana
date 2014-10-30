@@ -1,12 +1,18 @@
 CC=g++
 CFLAGS=-O3 -pg -Iinclude `root-config --libs --cflags`
 CFILES=daqana.cc src/event.cc src/daq.cc src/driver.cc src/rootdriver.cc 
+CSFILES=slowdaq.cc src/sevent.cc src/sdaq.cc src/driver.cc src/srootdriver.cc
 
-daqana: $(CFILES)  
+all: daqana slowdaq
+
+daqana: $(CFILES)
 	$(CC) -o daqana $(CFILES) $(CFLAGS)
+
+slowdaq: $(CSFILES)
+	$(CC) -o slowdaq $(CSFILES) $(CFLAGS)
 
 clean:
 	rm -f *.o
 	rm daqana
-	rm daqana.exe
+	rm slowdaq
 

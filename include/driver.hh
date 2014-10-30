@@ -13,11 +13,12 @@ class driver
 {
 public:
     driver();
-    driver(string driver_file);
+    driver(string driver_file, bool fastOn, bool slowOn);
     ~driver();
     string getDataFile(){return DataFile;};
     string getRootFile(){return RootFile;};
     string getSlowFile(){return SlowFile;};
+    string getTempSlowFile(){return TempSlowFile;}
     string getLocation(){return location;};
     Double_t getDeltaT(){return delta_t;};
     Int_t    getNSample(){return nSample;};
@@ -39,6 +40,7 @@ private:
     string DataFile;
     string RootFile;
     string SlowFile;
+    string TempSlowFile;
     string location;
     Double_t delta_t;
     Int_t    nSample;

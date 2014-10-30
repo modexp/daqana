@@ -51,7 +51,7 @@ private:
     Float_t 	nDeltaT;
     Int_t 	nDataPoints;
 };
-
+/*
 class slowevent
 {
 public:
@@ -66,5 +66,6 @@ private:
       Double_t	slowdata;
       ULong64_t 	slowtimestamp;
 };
+*/
  #endif // __EVENT_H__
 

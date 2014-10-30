@@ -63,55 +63,98 @@ def getSingleElement(dom,eName):
 # retrieve the names of all binary files in a directory
 def getFilenames(fbase):
     fnames = glob.glob(fbase+'/*.bin')
+    print 'fnames == []'
+    print fnames == []
+    if(fnames == []):
+      fnames = glob.glob(fbase+'/*.slo')
+      #fnames = [os.path.splitext(each)[0] for each in fnames
+      
     return fnames
 
 # retrieve the name of the xml file
 def getXMLFilename(fname):
+
+    # only remove the last bit with the 0000n.bin from the filename
+  arr2 = fname.split('.')
+  
+  if (arr2[1] == 'bin'):
     arr = fname.split('_')
     # start with first element
     fb =arr[0]
-    # only reomve the last bit with the 0000n.bin from the filename
     for i in range(1,len(arr)-1):
       fb = fb + '_' + arr[i]
+  else: 
+    fb = os.path.splitext(fname)[0]
 
-    # compose the xml name
-    XMLname = fb+'.XML'
-    print '    XML file  = ' + XMLname
-    return XMLname
+  # compose the xml name
+  XMLname = fb+'.XML'
+  print '    XML file  = ' + XMLname
+  return XMLname
     
 # retrieve the name of the slow file
 def getSlowFilename(fname):
+  arr2 = fname.split('.')
+  if (arr2[1] == 'bin'):
     arr = fname.split('_')
     # start with first element
     fb =arr[0]
-    # only reomve the last bit with the 0000n.bin from the filename
     for i in range(1,len(arr)-1):
       fb = fb + '_' + arr[i]
+  else: 
+    fb = os.path.splitext(fname)[0]
 
-    # compose the xml name
-    slowname = fb+'.slo'
-    print '    Slow file  = ' + slowname
-    return slowname
-
-# make the name of the daq file
-def getDAQFilename(outdir,fname):
-    arr = fname.split('/')
-    # get the last element
-    fb = arr[len(arr)-1]
-    # compose the xml name
-    DAQname = outdir+'/'+fb+'.tmp'
-    print '    DAQ file  = ' + DAQname
-    return DAQname
-
-# make the output root filename
-def rootFilename(outdir,datafile):
+    # compose the slow name
+  slowname = fb+'.slo'
+  print '    Slow file  = ' + slowname
+  return slowname
+    
+# make the name of the temporary slow tree
+def getOutSlowFilename(outdir,datafile):
+    arr2 = datafile.split('.')  
+    if (arr2[1] == 'bin'):
+      arr2 = fb.split('_')
+      fb = arr2[0]
+      for i in range(1,len(arr2)-1):
+	fb = fb + '_' + arr2[i]
+    else: 
+      fb = os.path.splitext(datafile)[0]
+      
     arr = datafile.split('/')
     # get the last element
     fb = arr[len(arr)-1]
+      
     # compose the root filename
-    froot = outdir + '/' + fb + '.root'
-    print '    ROOT file = ' + froot
-    return froot
+    tempname = outdir + '/' + fb + '.sroot'
+    print '    Slow ROOT file = ' + tempname
+    return tempname
+
+# make the name of the daq file
+def getDAQFilename(outdir,datafile):
+  
+  fb = os.path.splitext(datafile)[0]
+
+  arr = datafile.split('/')
+  # get the last element
+  fb = arr[len(arr)-1]
+
+  # compose the xml name
+  DAQname = outdir+'/'+fb+'.tmp'
+  print '    DAQ file  = ' + DAQname
+  return DAQname
+
+# make the output root filename
+def rootFilename(outdir,datafile):
+
+  fb = os.path.splitext(datafile)[0]
+
+  arr = datafile.split('/')
+  # get the last element
+  fb = arr[len(arr)-1]
+      
+  # compose the root filename
+  froot = outdir + '/' + fb + '.root'
+  print '    ROOT file = ' + froot
+  return froot
     
 
 # calculate the relevant numbers from the file
@@ -146,80 +189,90 @@ def generateDriverFile(outdir,filename):
     #
     
     # parse the DAQ xml file
-    slowfile = getSlowFilename(filename)
+
     print 'XML::parsing ...'
     xmlfile = getXMLFilename(filename)
     dom     = parse(xmlfile)
     #  define the root filename: to the right location + right name
-    rootfile = rootFilename(outdir,filename)
+    if (fastOn == 1): rootfile = rootFilename(outdir,filename)
     # open driver file for daqana
     daqfile = getDAQFilename(outdir,filename)
+    if (slowOn == 1): slowfile = getSlowFilename(filename)
+    if (slowOn == 1): tempslowfile = getOutSlowFilename(outdir, filename)
     
-    # get parameters from parser
-    print 'XML::read main run parameters ...'
-
-    chunk_size   = getSingleElement(dom,'waveforms_per_data_chunk')
-    delta_t      = getSingleElement(dom,'time_per_sample')
-    n_sample     = getSingleElement(dom,'samples_per_waveform')
-    n_pretrigger = getSingleElement(dom,'pretrigger_samples')
-    n_header     = int(getSingleElement(dom,'samples_per_event')) - int(n_sample)
-    # array_size   = int(array_length)*INT_SIZE
-    event_size   = (int(n_sample)+int(n_header))*INT_SIZE
-    array_size   = int(chunk_size)*int(event_size)
-
-    location     = getSingleElement(dom,'location')
-    
-    initial_time 	= getSingleElement(dom, 'initial_timestamp')
-
-    #  get the nEvent and nEventPerArray from the file information
-    print 'XML::calculate number of events ...'
-    nEvent= calculateNumberOfEvents(filename, array_size, event_size)
     fdaq = open(daqfile,'w')
-    fdaq.write(filename + '\n')
-    fdaq.write(slowfile + '\n')
-    fdaq.write(rootfile + '\n')
-    fdaq.write(location +'\n')
-    fdaq.write(initial_time + '\n')
-    fdaq.write(delta_t + '\n')
-    fdaq.write(n_sample + '\n')
-    fdaq.write(n_pretrigger + '\n')
-    fdaq.write(str(n_header) + '\n')
-    fdaq.write(str(array_size) + '\n')
-    fdaq.write(str(event_size) + '\n')
-    fdaq.write(str(nEvent) + '\n')
     
-    print 'XML::read channel attributes ...'
-    channel_info = dom.getElementsByTagName('channel')
-    for i in range(0,NUM_CHANNELS):
-	active_channel = parseString(channel_info[i].toxml())
-	index = getSingleElement(active_channel, 'index')
-	print 'XML:: reading channel: ', index, ' ...'
-	##fdaq.write(index + '\n') # write channel index (0-7)
-	print 'XML:: channel ', index, ': ', getSingleElement(active_channel, 'active'), ' ...'
-	fdaq.write(getSingleElement(active_channel, 'active') + '\n') # write channel status (on/off)
-	print 'XML:: channel ', index, ' serial number: ', getSingleElement(active_channel, 'serial_numbers'), ' ...'
-	fdaq.write(getSingleElement(active_channel, 'serial_numbers') + '\n') # write serial number
-	print 'XML:: channel ', index, ' detector type: ', getSingleElement(active_channel, 'det_type'), ' ...'
-	fdaq.write(getSingleElement(active_channel, 'det_type') + '\n') # write detector type
-	print 'XML:: channel ', index, ' source: ', getSingleElement(active_channel, 'sources'), ' ...'
-	fdaq.write(getSingleElement(active_channel, 'sources') + '\n') # write source
-	print 'XML:: channel ', index, ' trigger level: ', getSingleElement(active_channel, 'trigger_level'), ' ...'
-	fdaq.write(getSingleElement(active_channel, 'trigger_level') + '\n') # write trigger level
-	print 'XML:: channel ', index, ' PMT voltage: ', getSingleElement(active_channel, 'voltage'), ' ...'
-	fdaq.write(getSingleElement(active_channel, 'voltage') + '\n') # write voltage
+    if (fastOn == 1):
+    
+      # get parameters from parser
+      print 'XML::read main run parameters ...'
+
+      chunk_size   = getSingleElement(dom,'waveforms_per_data_chunk')
+      delta_t      = getSingleElement(dom,'time_per_sample')
+      n_sample     = getSingleElement(dom,'samples_per_waveform')
+      n_pretrigger = getSingleElement(dom,'pretrigger_samples')
+      n_header     = int(getSingleElement(dom,'samples_per_event')) - int(n_sample)
+      # array_size   = int(array_length)*INT_SIZE
+      event_size   = (int(n_sample)+int(n_header))*INT_SIZE
+      array_size   = int(chunk_size)*int(event_size)
+
+      location     = getSingleElement(dom,'location')
+    
+      initial_time 	= getSingleElement(dom, 'initial_timestamp')
+
+      #  get the nEvent and nEventPerArray from the file information
+      print 'XML::calculate number of events ...'
+      nEvent= calculateNumberOfEvents(filename, array_size, event_size)
+      fdaq.write(filename + '\n')
+    if (slowOn == 1):
+      fdaq.write(slowfile + '\n')
+      fdaq.write(tempslowfile + '\n')
+    if (fastOn == 1):
+      fdaq.write(rootfile + '\n')
+      fdaq.write(location +'\n')
+      fdaq.write(initial_time + '\n')
+      fdaq.write(delta_t + '\n')
+      fdaq.write(n_sample + '\n')
+      fdaq.write(n_pretrigger + '\n')
+      fdaq.write(str(n_header) + '\n')
+      fdaq.write(str(array_size) + '\n')
+      fdaq.write(str(event_size) + '\n')
+      fdaq.write(str(nEvent) + '\n')
+    
+      print 'XML::read channel attributes ...'
+      channel_info = dom.getElementsByTagName('channel')
+      for i in range(0,NUM_CHANNELS):
+	  active_channel = parseString(channel_info[i].toxml())
+	  index = getSingleElement(active_channel, 'index')
+	  print 'XML:: reading channel: ', index, ' ...'
+	  ##fdaq.write(index + '\n') # write channel index (0-7)
+	  print 'XML:: channel ', index, ': ', getSingleElement(active_channel, 'active'), ' ...'
+	  fdaq.write(getSingleElement(active_channel, 'active') + '\n') # write channel status (on/off)
+	  print 'XML:: channel ', index, ' serial number: ', getSingleElement(active_channel, 'serial_numbers'), ' ...'
+	  fdaq.write(getSingleElement(active_channel, 'serial_numbers') + '\n') # write serial number
+	  print 'XML:: channel ', index, ' detector type: ', getSingleElement(active_channel, 'det_type'), ' ...'
+	  fdaq.write(getSingleElement(active_channel, 'det_type') + '\n') # write detector type
+	  print 'XML:: channel ', index, ' source: ', getSingleElement(active_channel, 'sources'), ' ...'
+	  fdaq.write(getSingleElement(active_channel, 'sources') + '\n') # write source
+	  print 'XML:: channel ', index, ' trigger level: ', getSingleElement(active_channel, 'trigger_level'), ' ...'
+	  fdaq.write(getSingleElement(active_channel, 'trigger_level') + '\n') # write trigger level
+	  print 'XML:: channel ', index, ' PMT voltage: ', getSingleElement(active_channel, 'voltage'), ' ...'
+	  fdaq.write(getSingleElement(active_channel, 'voltage') + '\n') # write voltage
+	  
+    if (slowOn == 1):
         
-    print 'XML:: read slow params ...'
-    nSlowParams   = getSingleElement(dom,'num_params')
-    nSlow = nSlowParams
-    fdaq.write(nSlow + '\n')
-    nSlow = int(float(nSlow));
-    print 'XML:: read ', nSlowParams, ' total slow parameters'
-    slowparam = dom.getElementsByTagName('slow')
-    for i in range(0,nSlow):
-	slow_chan = parseString(slowparam[i].toxml())
-	branchname = getSingleElement(slow_chan, 'slowbranch')
-	fdaq.write(branchname + '\n')
-	print 'XML:: including branch ', branchname, ' ...'
+      print 'XML:: read slow params ...'
+      nSlowParams   = getSingleElement(dom,'num_params')
+      nSlow = nSlowParams
+      fdaq.write(nSlow + '\n')
+      nSlow = int(float(nSlow));
+      print 'XML:: read ', nSlowParams, ' total slow parameters'
+      slowparam = dom.getElementsByTagName('slow')
+      for i in range(0,nSlow):
+	  slow_chan = parseString(slowparam[i].toxml())
+	  branchname = getSingleElement(slow_chan, 'slowbranch')
+	  fdaq.write(branchname + '\n')
+	  print 'XML:: including branch ', branchname, ' ...'
 	
 
     fdaq.close
@@ -243,66 +296,75 @@ nb_files = len(filenames)
 cmds_to_ex = []
 child_pids = []
 
-# split files into nb_processes lists
-split_file_ids = dict([[process_nb, []] for process_nb in range(0, MAX_NB_PROCESSES)])
-for file_id in range(0, nb_files):
-  split_file_ids[file_id % MAX_NB_PROCESSES].append(file_id)
+if slowOn:
+  print 'MAIN:: Beginning to parse slow data'
+  print filenames
+  daqfile = generateDriverFile(outdir,filenames[0])
+  slow_cmd_string = './slowdaq -i ' + daqfile
+  os.system(slow_cmd_string)
+  print 'MAIN:: Done parsing slow data, moving on to fast data'
+
+if fastOn: 
+  # split files into nb_processes lists
+  split_file_ids = dict([[process_nb, []] for process_nb in range(0, MAX_NB_PROCESSES)])
+  for file_id in range(0, nb_files):
+    split_file_ids[file_id % MAX_NB_PROCESSES].append(file_id)
 
 # run on all the binary files in the input directory
-for process_nb in range(MAX_NB_PROCESSES):
-    # fork into desired number of processes
-    print 'I am at process # ', process_nb
-    try: 
-      # forking will produce both a child and a parent process starting here.  if the process is a child, it will return 0, if the process is a parent, it will return the PID of its child
-      pid = os.fork()
+  for process_nb in range(MAX_NB_PROCESSES):
+      # fork into desired number of processes
+      print 'I am at process # ', process_nb
+      try: 
+	# forking will produce both a child and a parent process starting here.  if the process is a child, it will return 0, if the process is a parent, it will return the PID of its child
+	pid = os.fork()
       
-      if pid: # this is the parent so push the children on a stack
-	child_pids.append(pid)
-        #print 'This is a parent, so the child\'s pid is: ', pid
+	if pid: # this is the parent so push the children on a stack
+	  child_pids.append(pid)
+	  #print 'This is a parent, so the child\'s pid is: ', pid
 	
-      else: # this is a child
+	else: # this is a child
         #print 'I am a child, my pid is:  ', os.getpid()
              # for the number of files we want to split across the number of cores, process each file
-	for file_id in split_file_ids[process_nb]:
+	  for file_id in split_file_ids[process_nb]:
 
 	    # generate driver file
-	    filename = filenames[file_id]
-	    daqfile = generateDriverFile(outdir,filename)
+	      filename = filenames[file_id]
+	      daqfile = generateDriverFile(outdir,filename)
    
-	    cmd_string = './daqana -i ' + daqfile
-	    if(grafOn):
-	      cmd_string = cmd_string + ' -g'
-	    if(longRoot):
-	      cmd_string = cmd_string + ' -l'
-	    if(slowOn):
-	      cmd_string = cmd_string + ' -s'
-	    if(fastOn):
-	      cmd_string = cmd_string + ' -f'
-	    if((not fastOn) and (not slowOn)):
-	      print 'MAIN:: User did not specify which data to parse, parsing slow data'
-	      cmd_string = cmd_string + ' -s'
+	      cmd_string = './daqana -i ' + daqfile
+	      if(grafOn):
+		cmd_string = cmd_string + ' -g'
+	      if(longRoot):
+		cmd_string = cmd_string + ' -l'
+	      if(slowOn):
+		cmd_string = cmd_string + ' -s'
+	      if(fastOn):
+		cmd_string = cmd_string + ' -f'
+	      if((not fastOn) and (not slowOn)):
+		print 'MAIN:: User did not specify which data to parse, only filling fast data'
+		#cmd_string = cmd_string + ' -s'
         
-	    cmds_to_ex.append(cmd_string)
-	    print 'MAIN:: Processing ' + filename
-	    os.system(cmd_string)
-	    print 'MAIN:: Processing complete for ' + filename
-	    print 'MAIN:: Remove ' + daqfile
-	    cmd_string = 'rm -f ' + daqfile
-	    os.system(cmd_string)
-        sys.exit(0)
+	      cmds_to_ex.append(cmd_string)
+	      print 'MAIN:: Processing ' + filename
+	      os.system(cmd_string)
+	      print 'MAIN:: Processing complete for ' + filename
+	      print 'MAIN:: Remove ' + daqfile
+	      cmd_string = 'rm -f ' + daqfile
+	      os.system(cmd_string)
+	  sys.exit(0)
 
 	
-    except OSError:
-      print 'error: couldn\'t fork!'
-      sys.exit(0)
-      
-for child in child_pids:
-  try: 
-    os.waitpid(child, 0)
-  except KeyboardInterrupt:
-      for child in child_pids:
-	os.kill(child, signal.SIGTERM)
+      except OSError:
+	print 'error: couldn\'t fork!'
 	sys.exit(0)
+      
+  for child in child_pids:
+    try: 
+      os.waitpid(child, 0)
+    except KeyboardInterrupt:
+	for child in child_pids:
+	  os.kill(child, signal.SIGTERM)
+	  sys.exit(0)
 
     # execute the daqana command with the right arguments
 

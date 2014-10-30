@@ -44,20 +44,24 @@ int main(int argc, char **argv)
                 exit(-1);
         }
     }
-      // driver for the daq processing..... provided from the python script
-      driver* myDriver = new driver(DriverFilename);
-      // TApplication is needed to plot a canvas with an event
-      TApplication *theApp;
-      if(graphics) theApp =  new TApplication("tapp", &argc, argv);
-      TCanvas *canv = new TCanvas("c1","c1",0,0,450,450);
-      // create an instance of teh daq datatype: controls all the binary file handling
-      daq myDaq(myDriver);
-      // root management
-      rootdriver myRoot(myDriver, longRoot, slowOn, fastOn);
-      ULong64_t new_stime;
+      if (fastOn) {
+	// driver for the daq processing..... provided from the python script
+	cout << "DriverFilename: " << DriverFilename << endl;
+	driver* myDriver = new driver(DriverFilename, fastOn, slowOn);
+	// TApplication is needed to plot a canvas with an event
+	TApplication *theApp;
+	if(graphics) theApp =  new TApplication("tapp", &argc, argv);
+	TCanvas *canv = new TCanvas("c1","c1",0,0,450,450);
+	// create an instance of teh daq datatype: controls all the binary file handling
+	daq myDaq(myDriver);
+	// root management
+	rootdriver myRoot(myDriver, longRoot, slowOn, fastOn);
       
-      // loop over the events
-      int totalnumberofevents = myDriver->getNEvent();
+	//ULong64_t new_stime;
+      
+	// loop over the events
+	int totalnumberofevents = myDriver->getNEvent();
+      /*
       if (slowOn) {
 	  cout << "Slow on specified" << endl;
 	  slowevent *sev;
@@ -70,13 +74,14 @@ int main(int argc, char **argv)
 	      sev = myDaq.readSlowEvent();
 	      new_stime = myRoot.SlowFill(sev, old_stime);
 	      //cout << "i = " << iSlowEv << endl;
+	      if (iSlowEv == 0) cout << "Slow time: " << new_stime << endl;
 	      old_stime = new_stime;
 	      delete sev;
 	  }
 	cout << "I am done processing slow events!!!! " << endl;
       }
+    */
 
-      if (fastOn) {
 
 	  cout << "Fast on specified" << endl;
 	  cout << totalnumberofevents << endl;
@@ -86,17 +91,19 @@ int main(int argc, char **argv)
 	      // read the next event
 	      ev   = myDaq.readEvent(myDriver);
 	      // write the event to the root tree
+	      //if (iEvent == 0) cout << "Fast timestamp: " << ev->getTimeStamp() << endl;;
 	      myRoot.FastFill(ev, myDriver);
 	      // if you want plot the event
 	      if(graphics) ev->Plot(canv);
 	      // free event 
 	      delete ev;
 	    }
-      }
+
       //delete theApp;
       // write run parameters to file
       myRoot.writeParameters(myDriver);
       myRoot.Close();
       delete myDriver;
+      }
       return 0;
 }

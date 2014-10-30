@@ -22,14 +22,17 @@ public:
     rootdriver();
     rootdriver(driver *drv, Bool_t, Bool_t, Bool_t);
     void FastFill(event *ev, driver *dr);
-    ULong64_t SlowFill(slowevent *old_sev, ULong64_t old_stime);
+    //ULong64_t SlowFill(slowevent *old_sev, ULong64_t old_stime);
     void writeParameters(driver *drv);
     void Close();
     
 private:
     TFile *f;
+    TFile *fs;
+    
     TTree *tree;
-    TTree *stree;
+    //TTree *stree;
+    TTree *temp_slowtree;
     
     Int_t   	chanNum;
     Float_t 	integral;
@@ -48,9 +51,11 @@ private:
     
     Int_t 	slowid;
     Double_t	sdata;
+    //Double_t	*sarr;
     ULong64_t 	old_stime;
     ULong64_t	new_stime;
     ULong64_t	stimestamp;
+    ULong64_t	stime;
     Int_t 	nSlowParams;
     Double_t 	*slowdata;
     

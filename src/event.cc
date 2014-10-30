@@ -168,7 +168,7 @@ void event::Plot(TCanvas *canv)
     //delete g_base;
 
 }
-
+/*
 slowevent::slowevent(){}
 
 slowevent::slowevent(Int_t sid, Double_t sd, ULong64_t sts){
@@ -183,3 +183,4 @@ slowevent::slowevent(Int_t sid, Double_t sd, ULong64_t sts){
 slowevent::~slowevent() {
   // nothing to do here
 }
+*/
