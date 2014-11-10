@@ -268,7 +268,7 @@ def generateDriverFile(outdir,filename):
       nSlow = int(float(nSlow));
       print 'XML:: read ', nSlowParams, ' total slow parameters'
       slowparam = dom.getElementsByTagName('slow')
-      for i in range(0,nSlow):
+      for i in range(0,nSlowParams):
 	  slow_chan = parseString(slowparam[i].toxml())
 	  branchname = getSingleElement(slow_chan, 'slowbranch')
 	  fdaq.write(branchname + '\n')
