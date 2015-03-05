@@ -192,11 +192,11 @@ def generateDriverFile(outdir,filename):
     xmlfile = getXMLFilename(filename)
     dom     = parse(xmlfile)
     #  define the root filename: to the right location + right name
-    rootfile = rootFilename(outdir,filename)
+    if (fastOn == 1): rootfile = rootFilename(outdir,filename)
     # open driver file for daqana
     daqfile = getDAQFilename(outdir,filename) 
-    slowfile = getSlowFilename(filename) # data file
-    tempslowfile = getOutSlowFilename(outdir, filename) # root tree
+    if (slowOn == 1): slowfile = getSlowFilename(filename) # data file
+    if (slowOn == 1): tempslowfile = getOutSlowFilename(outdir, filename) # root tree
     
     fdaq = open(daqfile,'w')
     

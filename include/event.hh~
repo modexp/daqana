@@ -12,11 +12,6 @@
 // N_baseline_calc = nPreTrigger - N_BASELINE_NOT_USED
 #define N_BASELINE_NOT_USED 5
 #define FRACTION 0.9
-#define RMS_MAX_VALUE 100. // maximum baseline RMS value to flag error
-
-// define the event error codes
-#define ADC_OVERFLOW_ERROR 0x01
-#define BASELINE_RMS_ERROR 0x02
 
 using namespace std;
 

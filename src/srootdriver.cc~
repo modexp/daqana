@@ -12,7 +12,7 @@ srootdriver::srootdriver(driver *drv){
     char* temp;
     nSlowParams = drv->getNSlowParams(); // valid for XML version CM1.0
     slowdata = (Double_t*) malloc(sizeof(Double_t) * nSlowParams);
-    //cout << "Number of slow parameters: " << nSlowParams << endl;
+    cout << "Number of slow parameters: " << nSlowParams << endl;
     for (Int_t i=0; i<nSlowParams; i++) slowdata[i]=0;
     
     // for fast and slow data

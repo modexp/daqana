@@ -13,6 +13,10 @@ driver::driver(string f, bool fastOn, bool slowOn){
     fin >> DataFile;
     fin >> SlowFile;
     fin >> TempSlowFile;
+    cout << " slowfile name: " <<SlowFile << endl;
+    cout << "temp slowfile name: " <<TempSlowFile << endl;
+     
+
     fin >> RootFile;
     fin >> location;
     fin >> initial_time;

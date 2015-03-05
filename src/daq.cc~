@@ -41,7 +41,9 @@ inline Int_t daq::readInt(){
 }
 
 inline Int_t daq::readADCval(Int_t i1){
-    return (i1>>2) & 0x3fff;
+  Int_t i1_adc = i1 >> 2;
+  //i1_adc = i1; 
+  return i1_adc;
 }
 
 inline Int_t daq::readFlag(Int_t i1){

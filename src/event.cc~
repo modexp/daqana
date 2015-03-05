@@ -135,7 +135,7 @@ Double_t event::calculatePeakAndIntegral() {
     {
       integral += ( 0.5*(trace->at(x+1) + trace->at(x)))-baseline; 
     }
-  integral*= 2./(TMath::Power(2,14)-1.); // convert from labview units to volts
+  //integral*= 2./(TMath::Power(2,16)-1.); // convert from labview units to volts
   integral*=nDeltaT;
   
   return integral;

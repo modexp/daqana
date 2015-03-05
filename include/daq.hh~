@@ -52,7 +52,6 @@ private:
     ifstream daqfile;
     //ifstream slowfile;
     event    *ev;
-    int 	file_length;
     //slowevent *sev;
     
 };

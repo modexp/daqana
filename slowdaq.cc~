@@ -61,7 +61,7 @@ int main(int argc, char **argv)
 	      old_stime = new_stime;
 	      delete sev;
 	  }
-	//cout << "I am done processing slow events!!!! " << endl;
+	cout << "I am done processing slow events!!!! " << endl;
 
 
       //delete theApp;

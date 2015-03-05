@@ -58,6 +58,7 @@ private:
     ULong64_t	stime;
     Int_t 	nSlowParams;
     Double_t 	*slowdata;
+    Double_t    *slowdata_array;
     
     Int_t 	slow_entry;
     Int_t	max_slowentries;

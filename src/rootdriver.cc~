@@ -131,7 +131,7 @@ void rootdriver::FastFill(event *ev, driver *dr){
     pkheight   = ev->getPeak();
     timestamp  = ev->getTimeStamp();
     isTestPulse = ev->getIsTestPulse();
-    errorCode   = ev->getErrorCode();
+    errorCode   = 0;
     
     //if (isTestPulse == 1) cout << integral << ", " << pkheight << endl;
     
