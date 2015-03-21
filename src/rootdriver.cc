@@ -22,17 +22,24 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow, Bool_t fast){
     errorCode = 0;
     
     // calibration constants
-    for(int ich = 0; ich < NUMBER_OF_CHANNELS; ich++) calibration_constant[ich]=1.0;
+    for(int ich = 0; ich < NUMBER_OF_CHANNELS; ich++) {
+        calibration_constant[ich] = 1.0;
+    }
     
-//    TFile *g = new TFile("calibrate.root","READONLY");
-//    TParameter<double>* cal;
-//    char tmp[100];
-//    for(int ich = 0; ich<NUMBER_OF_CHANNELS; ich++){
-//        sprintf(tmp,"cal_ch%02d",ich);
-//        cal = (TParameter<double>*)g->Get(tmp);
-//        calibration_constant[ich] = cal->GetVal();
-//    }
-//    g->Close();
+    // read the calibration constants if you wish
+    string calFile = drv->getCalibrationFile();
+    if(calFile != "NULL.root"){
+        TFile *g = new TFile(calFile.c_str(),"READONLY");
+        TParameter<double>* cal;
+        char tmp[100];
+        for(int ich = 0; ich<NUMBER_OF_CHANNELS; ich++){
+            sprintf(tmp,"cal_ch%02d",ich);
+            cal = (TParameter<double>*)g->Get(tmp);
+            calibration_constant[ich] = cal->GetVal();            
+        }
+        g->Close();
+
+    }
     
     // extra variables for extended root file
     baseline    = 0;

@@ -25,8 +25,9 @@ def parseArguments(argv):
     longRoot  = 0
     slowOn    = 0
     fastOn    = 0
+    calFile   = 'NULL.root'
     try:
-        opts, args = getopt.getopt(argv,"hlgsfi:o:",["long","graf","slow","fast","idir=","odir="])
+        opts, args = getopt.getopt(argv,"hlgsfi:o:c:",["long","graf","slow","fast","idir=","odir=","cal"])
     except getopt.GetoptError:
         print 'daqprocessor.py -i <inputfile> -o <outputfile> -g -s -f'
         sys.exit(2)
@@ -43,11 +44,14 @@ def parseArguments(argv):
         elif opt in ("-l","--long"):
             longRoot = 1
         elif opt in ("-s", "--slow"):
-	    slowOn = 1
-	elif opt in ("-f", "--fast"):
-	    fastOn = 1
+            slowOn = 1
+        elif opt in ("-f", "--fast"):
+            fastOn = 1
+        elif opt in ("-c", "--cal"):
+            calFile = arg
 
-    return inDir, outDir, grafOn, longRoot, slowOn, fastOn
+    return inDir, outDir, grafOn, longRoot, slowOn, fastOn, calFile
+
 
 # function to retreive a single parameter from the xml file
 def getSingleElement(dom,eName):
@@ -179,7 +183,7 @@ def calculateNumberOfEvents(filename,array_size,event_size):
     return nEvent
 
 # generate the driver file for daqana based on XML file and data filesize
-def generateDriverFile(outdir,filename):
+def generateDriverFile(outdir,filename,calibration):
     
     #
     # NOTE: if you write an extra line to the daqfile driver for daqana ->
@@ -224,6 +228,7 @@ def generateDriverFile(outdir,filename):
     fdaq.write(tempslowfile + '\n')
     fdaq.write(rootfile + '\n')
     fdaq.write(location +'\n')
+    fdaq.write(calibration + '\n')
     fdaq.write(initial_time + '\n')
     fdaq.write(delta_t + '\n')
     fdaq.write(n_sample + '\n')
@@ -280,7 +285,7 @@ def generateDriverFile(outdir,filename):
 
 print 'MAIN:: Welcome to the modulation daq-processor...'
 # parse the IO arguments below
-filebase, outdir, grafOn, longRoot, slowOn, fastOn = parseArguments(sys.argv[1:])
+filebase, outdir, grafOn, longRoot, slowOn, fastOn, calibration = parseArguments(sys.argv[1:])
 
 #  get the files from the data directory
 filenames, slownames = getFilenames(filebase)
@@ -294,7 +299,7 @@ child_pids = []
 if slowOn:
   print 'MAIN:: Beginning to parse slow data'
   for i in range(nb_sfiles):
-    daqfile = generateDriverFile(outdir,slownames[i])
+    daqfile = generateDriverFile(outdir,slownames[i], calibration)
     slow_cmd_string = './slowdaq -i ' + daqfile
     os.system(slow_cmd_string)
     cmd_string = 'rm -f ' + daqfile
@@ -326,19 +331,19 @@ if fastOn:
 
 	    # generate driver file
 	      filename = filenames[file_id]
-	      daqfile = generateDriverFile(outdir,filename)
+	      daqfile = generateDriverFile(outdir,filename,calibration)
    
 	      cmd_string = './daqana -i ' + daqfile
 	      if(grafOn):
-		cmd_string = cmd_string + ' -g'
+              cmd_string = cmd_string + ' -g'
 	      if(longRoot):
-		cmd_string = cmd_string + ' -l'
+              cmd_string = cmd_string + ' -l'
 	      if(slowOn):
-		cmd_string = cmd_string + ' -s'
+              cmd_string = cmd_string + ' -s'
 	      if(fastOn):
-		cmd_string = cmd_string + ' -f'
+              cmd_string = cmd_string + ' -f'
 	      if((not fastOn) and (not slowOn)):
-		print 'MAIN:: User did not specify which data to parse, only filling fast data'
+              print 'MAIN:: User did not specify which data to parse, only filling fast data'
 		#cmd_string = cmd_string + ' -s'
         
 	      cmds_to_ex.append(cmd_string)
@@ -366,5 +371,6 @@ if fastOn:
     # execute the daqana command with the right arguments
 
 print 'MAIN:: Exit from the daq-processor. bye-bye.'
+
 
 

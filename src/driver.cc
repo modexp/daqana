@@ -21,6 +21,7 @@ driver::driver(string f, bool fastOn, bool slowOn){
     if (fastOn) {
         fin >> RootFile;
         fin >> location;
+        fin >> CalibrationFile;
         fin >> initial_time;
         fin >> delta_t;
         fin >> nSample;

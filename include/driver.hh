@@ -17,6 +17,7 @@ public:
     ~driver();
     string getDataFile(){return DataFile;};
     string getRootFile(){return RootFile;};
+    string getCalibrationFile(){return CalibrationFile;};
     string getSlowFile(){return SlowFile;};
     string getTempSlowFile(){return TempSlowFile;}
     string getLocation(){return location;};
@@ -40,6 +41,7 @@ private:
     string DataFile;
     string RootFile;
     string SlowFile;
+    string CalibrationFile;
     string TempSlowFile;
     string location;
     Double_t delta_t;
