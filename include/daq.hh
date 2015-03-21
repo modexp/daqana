@@ -30,10 +30,13 @@ public:
     event* readEvent(driver* dr);
     //slowevent* readSlowEvent();
     //Int_t   GetSlowFileSize();
+    void endEvent();
     
 private:
+    event   *newEv;
     Double_t  readTimestamp();
     Int_t   readInt();
+
     Int_t   readLongInt();
     Int_t   readADCval(Int_t i1);
     Int_t   readFlag(Int_t i1);
@@ -51,8 +54,7 @@ private:
     Double_t	deltat;
     ifstream daqfile;
     //ifstream slowfile;
-    event    *ev;
-    int 	file_length;
+    //event    *ev;
     //slowevent *sev;
     
 };
