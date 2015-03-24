@@ -10,9 +10,14 @@
 #include "TMath.h"
 
 // N_baseline_calc = nPreTrigger - N_BASELINE_NOT_USED
-#define N_BASELINE_NOT_USED 5
+//#define N_BASELINE_NOT_USED 5
+#define N_BASELINE_NOT_USED 10
 #define FRACTION 0.9
-#define RMS_MAX_VALUE 100. // maximum baseline RMS value to flag error
+#define RMS_MAX_VALUE 25. // maximum baseline RMS value to flag error
+
+// ADC settings
+#define ADC_MAX_VALUE   16384
+#define ADC_MAX_VOLTAGE 2.0
 
 // define the event error codes
 #define ADC_OVERFLOW_ERROR 0x01
@@ -38,19 +43,21 @@ public:
     Bool_t        getIsTestPulse()  {return iLED;};
     Double_t      getTimeStamp() {return timestamp;};
     Double_t      getBaseline() {return baseline;};
+    Double_t      getBaselineRMS() {return baselineRMS;};
     Double_t      calculateBaselineRMS();
     Double_t      calculateBaseline();
     Double_t      calculatePeak();
     Double_t      calculateIntegral();
-    Double_t 	calculatePeakAndIntegral();
-    Int_t	getErrorCode(){return eventError;}
+    Double_t 	  calculatePeakAndIntegral();
     
+    Int_t         getErrorCode(){return eventError;}
 private:
-    Int_t	  eventError;
+    Int_t         eventError;
     Int_t         ievent;
     Int_t         ichannel;
-    Double_t      timestamp;
+    Double_t        timestamp;
     vector<Double_t>* trace;
+
     Bool_t 	iLED;
     Double_t      baseline;
     Double_t      baselineRMS;

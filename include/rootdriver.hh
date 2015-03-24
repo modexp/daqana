@@ -15,6 +15,7 @@
 
 using namespace std;
 
+#define NUMBER_OF_CHANNELS 8
 
 class rootdriver
 {
@@ -60,7 +61,8 @@ private:
     Double_t 	*slowdata;
     
     Int_t 	slow_entry;
-    Int_t	max_slowentries;
+    
+    Double_t calibration_constant[NUMBER_OF_CHANNELS];
     
 };
 

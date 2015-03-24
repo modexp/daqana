@@ -63,26 +63,28 @@ int main(int argc, char **argv)
         // loop over the events
         int totalnumberofevents = myDriver->getNEvent();
         
+        
+        
         cout << "Fast on specified" << endl;
         cout << totalnumberofevents << endl;
-        event *ev;
+        event *ev = NULL;
         for(int iEvent=0; iEvent<totalnumberofevents; iEvent++){
-        //for(int iEvent=0; iEvent<10; iEvent++){
-
+            //for(int iEvent=0; iEvent<10; iEvent++){
+            
             if(iEvent%10000==0) cout << "processed "<<iEvent<<" events"<<endl;
             // read the next event
             ev   = myDaq.readEvent(myDriver);
             // write the event to the root tree
-            //if (iEvent == 0) cout << "Fast timestamp: " << ev->getTimeStamp() << endl;;
             myRoot.FastFill(ev, myDriver);
+            
             // if you want plot the event
             Double_t pk  = ev->getPeak();
             Int_t    ich = ev->getChannel();
             Double_t rms = ev->calculateBaselineRMS();
             // SANDER HIERO!
-            if(graphics && (ev->getErrorCode()&0x01)!=0) ev->Plot(canv);
-            // free event 
-            delete ev;
+            if(graphics && ich==4) ev->Plot(canv);
+            // free event
+            myDaq.endEvent();
         }
         
         cout <<"Finished processing .... terminating daqana" <<endl;
