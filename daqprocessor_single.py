@@ -114,22 +114,21 @@ def getSlowFilename(fname):
     
 # make the name of the temporary slow tree
 def getOutSlowFilename(outdir,datafile):
-    arr2 = datafile.split('.')  
-    if (arr2[1] == 'bin'):
-        arr2 = fb.split('_')
-        fb = arr2[0]
-        for i in range(1,len(arr2)-1):
-            fb = fb + '_' + arr2[i]
-    else: 
-        fb = os.path.splitext(datafile)[0]
-      
+    arr2 = datafile.split('.')
+    datafile = arr2[0]
+    
     arr = datafile.split('/')
     # get the last element
     fb = arr[len(arr)-1]
-      
+    
+    arr = fb.split('_')
+    fb = arr[0]
+    for i in range(1,len(arr)-1):
+        fb = fb + '_' + arr[i]
+    
     # compose the root filename
     tempname = outdir + '/' + fb + '.sroot'
-    print('    Slow ROOT file = ' + tempname)
+    #print '    Slow ROOT file = ' + tempname
     return tempname
 
 # make the name of the daq file
@@ -201,83 +200,86 @@ def generateDriverFile(outdir,filename, calibration):
     if (fastOn == 1): rootfile = rootFilename(outdir,filename)
     # open driver file for daqana
     daqfile = getDAQFilename(outdir,filename)
-    if (slowOn == 1): slowfile = getSlowFilename(filename)
-    if (slowOn == 1): tempslowfile = getOutSlowFilename(outdir, filename)
+#    if (slowOn == 1):
+    slowfile = getSlowFilename(filename)
+#   if (slowOn == 1):
+    tempslowfile = getOutSlowFilename(outdir, filename)
     
     fdaq = open(daqfile,'w')
-    
-    if (fastOn == 1):
-    
+        
+        #if (fastOn == 1):
+        
         # get parameters from parser
-        print('XML::read main run parameters ...')
-
-        chunk_size   = getSingleElement(dom,'waveforms_per_data_chunk')
-        delta_t      = getSingleElement(dom,'time_per_sample')
-        n_sample     = getSingleElement(dom,'samples_per_waveform')
-        n_pretrigger = getSingleElement(dom,'pretrigger_samples')
-        n_header     = int(getSingleElement(dom,'samples_per_event')) - int(n_sample)
-        # array_size   = int(array_length)*INT_SIZE
-        event_size   = (int(n_sample)+int(n_header))*INT_SIZE
-        array_size   = int(chunk_size)*int(event_size)
-
-        location     = getSingleElement(dom,'location')
+    print('XML::read main run parameters ...')
+        
+    chunk_size   = getSingleElement(dom,'waveforms_per_data_chunk')
+    delta_t      = getSingleElement(dom,'time_per_sample')
+    n_sample     = getSingleElement(dom,'samples_per_waveform')
+    n_pretrigger = getSingleElement(dom,'pretrigger_samples')
+    n_header     = int(getSingleElement(dom,'samples_per_event')) - int(n_sample)
+    # array_size   = int(array_length)*INT_SIZE
+    event_size   = (int(n_sample)+int(n_header))*INT_SIZE
+    array_size   = int(chunk_size)*int(event_size)
+        
+    location     = getSingleElement(dom,'location')
     
-        initial_time 	= getSingleElement(dom, 'initial_timestamp')
-
+    initial_time 	= getSingleElement(dom, 'initial_timestamp')
+    
         #  get the nEvent and nEventPerArray from the file information
-        print('XML::calculate number of events ...')
-        nEvent= calculateNumberOfEvents(filename, array_size, event_size)
-        fdaq.write(filename + '\n')
-    if (slowOn == 1):
-        fdaq.write(slowfile + '\n')
-        fdaq.write(tempslowfile + '\n')
-    print('fastOn? = ', fastOn)
-    if (fastOn == 1):
-        fdaq.write(rootfile + '\n')
-        fdaq.write(location +'\n')
-        fdaq.write(calibration + '\n')
-        fdaq.write(initial_time + '\n')
-        fdaq.write(delta_t + '\n')
-        fdaq.write(n_sample + '\n')
-        fdaq.write(n_pretrigger + '\n')
-        fdaq.write(str(n_header) + '\n')
-        fdaq.write(str(array_size) + '\n')
-        fdaq.write(str(event_size) + '\n')
-        fdaq.write(str(nEvent) + '\n')
+    print('XML::calculate number of events ...')
+    nEvent= calculateNumberOfEvents(filename, array_size, event_size)
+    fdaq.write(filename + '\n')
+    #if (slowOn == 1):
+    fdaq.write(slowfile + '\n')
+    fdaq.write(tempslowfile + '\n')
+
+#if (fastOn == 1):
+    fdaq.write(rootfile + '\n')
+    fdaq.write(location +'\n')
+    fdaq.write(calibration + '\n')
+    fdaq.write(initial_time + '\n')
+    fdaq.write(delta_t + '\n')
+    fdaq.write(n_sample + '\n')
+    fdaq.write(n_pretrigger + '\n')
+    fdaq.write(str(n_header) + '\n')
+    fdaq.write(str(array_size) + '\n')
+    fdaq.write(str(event_size) + '\n')
+    fdaq.write(str(nEvent) + '\n')
     
-        print('XML::read channel attributes ...')
-        channel_info = dom.getElementsByTagName('channel')
-        for i in range(0,NUM_CHANNELS):
-            active_channel = parseString(channel_info[i].toxml())
-            index = getSingleElement(active_channel, 'index')
-            print('XML:: reading channel: ', index, ' ...')
-            ##fdaq.write(index + '\n') # write channel index (0-7)
-            print('XML:: channel ', index, ': ', getSingleElement(active_channel, 'active'), ' ...')
-            fdaq.write(getSingleElement(active_channel, 'active') + '\n') # write channel status (on/off)
-            print('XML:: channel ', index, ' serial number: ', getSingleElement(active_channel, 'serial_numbers'), ' ...')
-            fdaq.write(getSingleElement(active_channel, 'serial_numbers') + '\n') # write serial number
-            print('XML:: channel ', index, ' detector type: ', getSingleElement(active_channel, 'det_type'), ' ...')
-            fdaq.write(getSingleElement(active_channel, 'det_type') + '\n') # write detector type
-            print('XML:: channel ', index, ' source: ', getSingleElement(active_channel, 'sources'), ' ...')
-            fdaq.write(getSingleElement(active_channel, 'sources') + '\n') # write source
-            print('XML:: channel ', index, ' trigger level: ', getSingleElement(active_channel, 'trigger_level'), ' ...')
-            fdaq.write(getSingleElement(active_channel, 'trigger_level') + '\n') # write trigger level
-            print('XML:: channel ', index, ' PMT voltage: ', getSingleElement(active_channel, 'voltage'), ' ...')
-            fdaq.write(getSingleElement(active_channel, 'voltage') + '\n') # write voltage
+    print('XML::read channel attributes ...')
+    channel_info = dom.getElementsByTagName('channel')
+    for i in range(0,NUM_CHANNELS):
+        active_channel = parseString(channel_info[i].toxml())
+        index = getSingleElement(active_channel, 'index')
+        print('XML:: reading channel: ', index, ' ...')
+        ##fdaq.write(index + '\n') # write channel index (0-7)
+        print('XML:: channel ', index, ': ', getSingleElement(active_channel, 'active'), ' ...')
+        fdaq.write(getSingleElement(active_channel, 'active') + '\n') # write channel status (on/off)
+        print('XML:: channel ', index, ' serial number: ', getSingleElement(active_channel, 'serial_numbers'), ' ..')
+        fdaq.write(getSingleElement(active_channel, 'serial_numbers') + '\n') # write serial number
+        print('XML:: channel ', index, ' detector type: ', getSingleElement(active_channel, 'det_type'), ' ...')
+        fdaq.write(getSingleElement(active_channel, 'det_type') + '\n') # write detector type
+        print('XML:: channel ', index, ' source: ', getSingleElement(active_channel, 'sources'), ' ...')
+        fdaq.write(getSingleElement(active_channel, 'sources') + '\n') # write source
+        print('XML:: channel ', index, ' trigger level: ', getSingleElement(active_channel, 'trigger_level'), ' ...')
+        fdaq.write(getSingleElement(active_channel, 'trigger_level') + '\n') # write trigger level
+        print('XML:: channel ', index, ' PMT voltage: ', getSingleElement(active_channel, 'voltage'), ' ...')
+        fdaq.write(getSingleElement(active_channel, 'voltage') + '\n') # write voltage
           
-    if (slowOn == 1):
-        print('XML:: read slow params ...')
-        nSlowParams   = getSingleElement(dom,'num_params')
-        nSlow = nSlowParams
-        fdaq.write(nSlow + '\n')
-        nSlow = int(float(nSlow));
-        print('XML:: read ', nSlowParams, ' total slow parameters')
-        slowparam = dom.getElementsByTagName('slow')
-        for i in range(0,nSlowParams):
-            slow_chan = parseString(slowparam[i].toxml())
-            branchname = getSingleElement(slow_chan, 'slowbranch')
-            fdaq.write(branchname + '\n')
-            print('XML:: including branch ', branchname, ' ...')
+          #if (slowOn == 1):
+          #print 'XML:: read slow params ...'
+    nSlowParams   = getSingleElement(dom,'num_params')
+    nSlow = nSlowParams
+    fdaq.write(nSlow + '\n')
+    nSlow = int(float(nSlow));
+    print ('XML:: read ', nSlowParams, ' total slow parameters')
+    slowparam = dom.getElementsByTagName('slow')
+    for i in range(0,nSlow):
+        slow_chan = parseString(slowparam[i].toxml())
+        branchname = getSingleElement(slow_chan, 'slowbranch')
+        fdaq.write(branchname + '\n')
+        print('XML:: including branch ', branchname, ' ...')
+
 
     fdaq.close
 
