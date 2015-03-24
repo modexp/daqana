@@ -335,15 +335,15 @@ if fastOn:
    
 	      cmd_string = './daqana -i ' + daqfile
 	      if(grafOn):
-              cmd_string = cmd_string + ' -g'
+              	cmd_string = cmd_string + ' -g'
 	      if(longRoot):
-              cmd_string = cmd_string + ' -l'
+              	cmd_string = cmd_string + ' -l'
 	      if(slowOn):
-              cmd_string = cmd_string + ' -s'
+              	cmd_string = cmd_string + ' -s'
 	      if(fastOn):
-              cmd_string = cmd_string + ' -f'
+              	cmd_string = cmd_string + ' -f'
 	      if((not fastOn) and (not slowOn)):
-              print 'MAIN:: User did not specify which data to parse, only filling fast data'
+              	print 'MAIN:: User did not specify which data to parse, only filling fast data'
 		#cmd_string = cmd_string + ' -s'
         
 	      cmds_to_ex.append(cmd_string)
