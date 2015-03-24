@@ -74,7 +74,7 @@ void correlator::Loop(int isel0, int isel1)
         nb = fChain->GetEntry(jentry);   nbytes += nb;
         
         
-        if (channel == isel0 || channel == isel1) {
+        if ((channel == isel0 || isel0 == -1) || (channel == isel1 || isel1 == -1)) {
             // second part of a pair
             if(ch[0]>0){
                 E[1]  = E[0];
