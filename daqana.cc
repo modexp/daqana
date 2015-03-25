@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     
     // driver for the daq processing..... provided from the python script
     cout << "daqana:: DriverFilename: " << DriverFilename << endl;
-    driver* myDriver = new driver(DriverFilename, true, slowOn);
+    driver* myDriver = new driver(DriverFilename, slowOn);
     // TApplication is needed to plot a canvas with an event
     TApplication *theApp;
     if(graphics) theApp =  new TApplication("tapp", &argc, argv);
@@ -52,10 +52,8 @@ int main(int argc, char **argv)
     // create an instance of teh daq datatype: controls all the binary file handling
     daq myDaq(myDriver);
     // root management
-    rootdriver myRoot(myDriver, longRoot, slowOn, true);
-    
-    //ULong64_t new_stime;
-    
+    rootdriver myRoot(myDriver, longRoot, slowOn);
+        
     // loop over the events
     int totalnumberofevents = myDriver->getNEvent();
     
@@ -64,7 +62,7 @@ int main(int argc, char **argv)
     for(int iEvent=0; iEvent<totalnumberofevents; iEvent++){
         //        for(int iEvent=0; iEvent<1000000; iEvent++){
         
-        if(iEvent%10000==0) cout << "     processed "<<iEvent<<" events"<<endl;
+        if(iEvent%100000==0) cout << "     processed "<<iEvent<<" events"<<endl;
         // read the next event
         ev   = myDaq.readEvent(myDriver);
         // write the event to the root tree

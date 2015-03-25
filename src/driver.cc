@@ -4,7 +4,7 @@
 
 driver::driver(){}
 
-driver::driver(string f, bool fastOn, bool slowOn){
+driver::driver(string f, bool slowOn){
     
     ifstream fin;
     fin.open(f.c_str());

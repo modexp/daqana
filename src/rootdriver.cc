@@ -8,10 +8,9 @@
 
 rootdriver::rootdriver(){}
 
-rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow, Bool_t fast){
+rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
     longRoot = tmpbool;
     slowOn = slow;
-    fastOn = fast;
     
     // initialize the Branch variables
     chanNum = -1;
@@ -35,10 +34,10 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow, Bool_t fast){
         for(int ich = 0; ich<NUMBER_OF_CHANNELS; ich++){
             sprintf(tmp,"cal_ch%02d",ich);
             cal = (TParameter<double>*)g->Get(tmp);
-            calibration_constant[ich] = cal->GetVal();            
+            calibration_constant[ich] = cal->GetVal();
         }
         g->Close();
-
+        
     }
     
     // extra variables for extended root file
@@ -47,20 +46,18 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow, Bool_t fast){
     
     // open the output root file
     f = new TFile(drv->getRootFile().c_str(),"RECREATE");
-
+    
     // Define tree and branches
     tree = new TTree("T", "Source data");
     
-    if(fastOn){
-        tree->Branch("channel", &chanNum, "channel/I");
-        tree->Branch("integral", &integral, "integral/F");
-        tree->Branch("height", &pkheight, "height/F");
-        tree->Branch("time", &timestamp, "time/D");
-        tree->Branch("istestpulse", &isTestPulse, "istestpulse/bool");
-        tree->Branch("error", &errorCode, "error/I");
-    }
+    tree->Branch("channel", &chanNum, "channel/I");
+    tree->Branch("integral", &integral, "integral/F");
+    tree->Branch("height", &pkheight, "height/F");
+    tree->Branch("time", &timestamp, "time/D");
+    tree->Branch("istestpulse", &isTestPulse, "istestpulse/bool");
+    tree->Branch("error", &errorCode, "error/I");
     
-    if(fastOn && longRoot){
+    if(longRoot){
         tree->Branch("baseline", &baseline, "baseline/f");
         tree->Branch("rms", &baselineRMS, "baselineRMS/f");
     }
@@ -215,7 +212,7 @@ void rootdriver::writeParameters(driver *drv){
 
 void rootdriver::Close(){
     tree->Write();
-
-    if(fastOn) f->Close();
+    
+    f->Close();
     if(slowOn) fs->Close();
 }

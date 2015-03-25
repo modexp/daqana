@@ -18,16 +18,12 @@ int main(int argc, char **argv)
     // switches
     int c = 0;
     string       DriverFilename;
-    bool fastOn;
     // parse switches
-    while((c = getopt(argc,argv,"fi:")) != -1)
+    while((c = getopt(argc,argv,"i:")) != -1)
     {
         switch(c)   {
             case 'i': // name of driver
                 DriverFilename = optarg;
-                break;
-            case 'f':
-                fastOn = true;
                 break;
             default:
                 exit(-1);
@@ -36,7 +32,7 @@ int main(int argc, char **argv)
     // driver for the daq processing..... provided from the python script
     cout << "MAIN:: slowdaq driver file = " << DriverFilename << endl;
     bool slowOn = true;
-    driver* myDriver = new driver(DriverFilename, fastOn, slowOn);
+    driver* myDriver = new driver(DriverFilename, slowOn);
     // TApplication is needed to plot a canvas with an event
     // create an instance of the daq datatype: controls all the binary file handling
     sdaq myDaq(myDriver);

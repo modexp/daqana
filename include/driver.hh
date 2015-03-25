@@ -13,7 +13,7 @@ class driver
 {
 public:
     driver();
-    driver(string driver_file, bool fastOn, bool slowOn);
+    driver(string driver_file, bool slowOn);
     ~driver();
     string getDataFile(){return DataFile;};
     string getRootFile(){return RootFile;};

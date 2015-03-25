@@ -21,7 +21,7 @@ class rootdriver
 {
 public:
     rootdriver();
-    rootdriver(driver *drv, Bool_t, Bool_t, Bool_t);
+    rootdriver(driver *drv, Bool_t, Bool_t);
     void FastFill(event *ev, driver *dr);
     //ULong64_t SlowFill(slowevent *old_sev, ULong64_t old_stime);
     void writeParameters(driver *drv);
@@ -48,7 +48,6 @@ private:
     Float_t 	baselineRMS;
     
     Bool_t 	slowOn;
-    Bool_t 	fastOn;
     
     Int_t 	slowid;
     Double_t	sdata;
