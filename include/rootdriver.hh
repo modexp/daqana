@@ -53,10 +53,14 @@ private:
     Int_t 	slowid;
     Double_t	sdata;
     //Double_t	*sarr;
-    ULong64_t 	old_stime;
-    ULong64_t	new_stime;
-    ULong64_t	stimestamp;
-    ULong64_t	stime;
+    //ULong64_t 	old_stime;
+    //ULong64_t	new_stime;
+    //ULong64_t	stimestamp;
+    //ULong64_t	stime;
+    Double_t 	old_stime;
+    Double_t	new_stime;
+    Double_t	stimestamp;
+    Double_t	stime;
     Int_t 	nSlowParams;
     Double_t 	*slowdata;
     

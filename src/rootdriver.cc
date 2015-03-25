@@ -45,35 +45,11 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow, Bool_t fast){
     baseline    = 0;
     baselineRMS = 0;
     
-    // open the root file
+    // open the output root file
     f = new TFile(drv->getRootFile().c_str(),"RECREATE");
-    
-    // get the slow tree that was previously written
-    if (slowOn) {
-        cout << "I think the slow file name is: " <<  drv->getTempSlowFile().c_str() << endl;
-        fs = new TFile(drv->getTempSlowFile().c_str(), "ROOT");
-    }
-    
-    // variables for slow data
-    Int_t nSlowParameters;
-    const char* slowbranchname;
-    char* temp;
-    Int_t nSlowParams = drv->getNSlowParams(); // valid for XML version CM1.0
-    slowdata = (Double_t*) malloc(sizeof(Double_t) * nSlowParams);
-    cout << "Number of slow parameters: " << nSlowParams << endl;
-    for (Int_t i=0; i<nSlowParams; i++) slowdata[i]=0;
-    
-    
-    // for fast and slow data
-    if (slowOn) slow_entry = 1;
-    
-    
+
     // Define tree and branches
     tree = new TTree("T", "Source data");
-    if (slowOn) {
-        temp_slowtree = (TTree*)fs->Get("ST");
-        //stree = new TTree("S", "Slow data");
-    }
     
     if(fastOn){
         tree->Branch("channel", &chanNum, "channel/I");
@@ -89,7 +65,25 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow, Bool_t fast){
         tree->Branch("rms", &baselineRMS, "baselineRMS/f");
     }
     
+    //
+    // Open the slow control datafile + initialize the data
+    //
+    
+    // variables for slow data
+    Int_t nSlowParameters;
+    const char* slowbranchname;
+    char* temp;
+    Int_t nSlowParams = drv->getNSlowParams(); // valid for XML version CM1.0
+    slowdata = (Double_t*) malloc(sizeof(Double_t) * nSlowParams);
+    cout << "rootdriver:: Number of slow parameters: " << nSlowParams << endl;
+    for (Int_t i=0; i<nSlowParams; i++) slowdata[i]=0;
+    
     if(slowOn){
+        cout << "rootdriver:: slow file name is = " <<  drv->getTempSlowFile().c_str() << endl;
+        fs = new TFile(drv->getTempSlowFile().c_str(), "ROOT");
+        temp_slowtree = (TTree*)fs->Get("ST");
+        slow_entry = 1;
+        
         const char* type = "/D";
         char buffer[256];
         for (Int_t i=0; i<nSlowParams; i++){
@@ -100,47 +94,19 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow, Bool_t fast){
             //cout << buffer << endl;
             temp_slowtree->SetBranchAddress(slowbranchname, &slowdata[i]);
             //stree->Branch(slowbranchname, &slowdata[i], buffer);
-            if (fastOn) tree->Branch(slowbranchname, &slowdata[i], buffer);
-            
-            
+            tree->Branch(slowbranchname, &slowdata[i], buffer);
         }
         //stree->Branch("stime", &stime, "slowtimestamp/l");
         temp_slowtree->SetBranchAddress("stime", &stimestamp);
         //stree->SetDirectory(0);
         tree->SetDirectory(0);
+        cout << "N slow = "<<temp_slowtree->GetEntriesFast()<<endl;
+        temp_slowtree->GetEntry(0);
+        cout << "slow time = "<<stimestamp<<endl;
+        for (Int_t i=0; i<nSlowParams; i++) cout<<drv->getSlowBranchName(i)<< " = "<<slowdata[i]<<endl;
     }
-    
-    
 }
-/*
- ULong64_t rootdriver::SlowFill(slowevent *sev, ULong64_t old_stime){
- slowid 	= sev->getSlowID();
- sdata	= sev->getSlowData();
- new_stime  = sev->getSlowTimeStamp();
- 
- //cout << "Slow ID: " << slowid << " Data: " << sdata << " Timestamp: " << new_stime << endl;
- 
- 
- if (new_stime <= old_stime) {
- if (slowid > 7) cout << "WTF!!!!!! The slow ID was: " << slowid << " the data was: " << sdata << " and the timestamp was " << new_stime << endl;
-	slowdata[slowid] = sdata;
-	stimestamp = new_stime;
- }
- else {
- 
- if (slowOn) stree->Fill();
- //cout << stimestamp << endl;
- //cout << "0: " << slowdata[0] << " 1: " << slowdata[1] << " 2: " << slowdata[2] << " 3: " << slowdata[3] << " 4: " << slowdata[4] << " 5: " << slowdata[5] << " 6: " << slowdata[6] << " 7: " << slowdata[7] << endl;
- //cout << "I have filled the tree!" << endl;
- slowdata[slowid] = sdata;
- stimestamp = new_stime;
- 
- }
- old_stime = new_stime;
- 
- return old_stime;
- }
- */
+
 void rootdriver::FastFill(event *ev, driver *dr){
     // fill the variables
     chanNum    = ev->getChannel() % 100;
@@ -155,12 +121,10 @@ void rootdriver::FastFill(event *ev, driver *dr){
         baselineRMS = ev->getBaselineRMS();
     }
     
-    if (slowOn && fastOn){
-        temp_slowtree->GetEntry(slow_entry);
-        //cout << "Slow timestamp: " << stimestamp << " Fast timestamp: " << timestamp << endl;
-        //cout << "0: " << slowdata[0] << " 1: " << slowdata[1] << " 2: " << slowdata[2] << " 3: " << slowdata[3] << " 4: " << slowdata[4] << " 5: " << slowdata[5] << " 6: " << slowdata[6] << " 7: " << slowdata[7] << endl;
+    if (slowOn){
+        //temp_slowtree->GetEntry(slow_entry);
         
-        if (timestamp>=stimestamp) { // if past this slowtimestamp, grab the next slow event
+        if (timestamp>=stimestamp && slow_entry<temp_slowtree->GetEntriesFast()) { // if past this slowtimestamp, grab the next slow event
             //cout << "I have filled in a new slow entry " << slow_entry << endl;
             temp_slowtree->GetEntry(slow_entry);
             slow_entry++;
@@ -170,7 +134,6 @@ void rootdriver::FastFill(event *ev, driver *dr){
     }
     // write to the tree
     tree->Fill();
-    //if (slowOn) stree->Fill();
 }
 
 void rootdriver::writeParameters(driver *drv){
@@ -252,8 +215,7 @@ void rootdriver::writeParameters(driver *drv){
 
 void rootdriver::Close(){
     tree->Write();
-    //stree->Write();
-    //f->Write(tree);
+
     if(fastOn) f->Close();
     if(slowOn) fs->Close();
 }
