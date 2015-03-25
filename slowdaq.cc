@@ -30,7 +30,7 @@ int main(int argc, char **argv)
         }
     }
     // driver for the daq processing..... provided from the python script
-    cout << "MAIN:: slowdaq driver file = " << DriverFilename << endl;
+    cout << "slowdaq:: driver file = " << DriverFilename << endl;
     bool slowOn = true;
     driver* myDriver = new driver(DriverFilename, slowOn);
     // TApplication is needed to plot a canvas with an event
@@ -45,11 +45,11 @@ int main(int argc, char **argv)
     
     slowevent *sev;
     int totalslowevents = myDaq.GetSlowFileSize();
-    cout << "MAIN:: Found " << totalslowevents << " slow events" << endl;
+    cout << "slowdaq:: Found " << totalslowevents << " slow events" << endl;
     ULong64_t old_stime = 0;
     
     for (int iSlowEv = 0; iSlowEv < totalslowevents; iSlowEv++){
-        if(iSlowEv%1000 == 0) cout << "Processed "<<iSlowEv<<" slow events"<<endl;
+        if(iSlowEv%10000 == 0) cout << "     processed "<<iSlowEv<<" slow events"<<endl;
         sev = myDaq.readSlowEvent();
         new_stime = myRoot.SlowFill(sev, old_stime);
         old_stime = new_stime;

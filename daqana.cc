@@ -75,6 +75,8 @@ int main(int argc, char **argv)
         if(graphics) ev->Plot(canv);
         // free event
         myDaq.endEvent();
+        
+        ev = NULL;
     }
     
     cout <<"daqana:: Finished processing .... terminating daqana" <<endl;

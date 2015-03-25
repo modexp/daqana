@@ -43,10 +43,11 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
     // extra variables for extended root file
     baseline    = 0;
     baselineRMS = 0;
-    
+    //
     // open the output root file
+    //
     f = new TFile(drv->getRootFile().c_str(),"RECREATE");
-    
+    f->cd();
     // Define tree and branches
     tree = new TTree("T", "Source data");
     
@@ -63,45 +64,73 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
     }
     
     //
-    // Open the slow control datafile + initialize the data
+    // Open the slow control datafile + initialize the data + add branches to the output tree
     //
-    
+
     // variables for slow data
     Int_t nSlowParameters;
     const char* slowbranchname;
     char* temp;
     Int_t nSlowParams = drv->getNSlowParams(); // valid for XML version CM1.0
-    slowdata = (Double_t*) malloc(sizeof(Double_t) * nSlowParams);
+    //slowdata = (Double_t*) malloc(sizeof(Double_t) * nSlowParams);
     cout << "rootdriver:: Number of slow parameters: " << nSlowParams << endl;
-    for (Int_t i=0; i<nSlowParams; i++) slowdata[i]=0;
+    for (Int_t i=0; i<nSlowParams; i++) {
+        slowdata.push_back(0.0);
+    }
     
     if(slowOn){
         cout << "rootdriver:: slow file name is = " <<  drv->getTempSlowFile().c_str() << endl;
-        fs = new TFile(drv->getTempSlowFile().c_str(), "ROOT");
+        fs = new TFile(drv->getTempSlowFile().c_str(), "READONLY");
         temp_slowtree = (TTree*)fs->Get("ST");
-        slow_entry = 1;
         
         const char* type = "/D";
         char buffer[256];
         for (Int_t i=0; i<nSlowParams; i++){
+            fs->cd();
             slowbranchname = drv->getSlowBranchName(i).c_str();
             //cout << slowbranchname << endl;
             strncpy(buffer, slowbranchname, sizeof(buffer));
             strncat(buffer, type, sizeof(buffer));
-            //cout << buffer << endl;
+//            cout << "SLOWBRANCHNAME >>"<<slowbranchname<<"<<" << endl;
+//            cout << "BUFFER         >>"<<buffer<<"<<" << endl;
             temp_slowtree->SetBranchAddress(slowbranchname, &slowdata[i]);
             //stree->Branch(slowbranchname, &slowdata[i], buffer);
+            f->cd();
             tree->Branch(slowbranchname, &slowdata[i], buffer);
         }
+        fs->cd();
         //stree->Branch("stime", &stime, "slowtimestamp/l");
         temp_slowtree->SetBranchAddress("stime", &stimestamp);
-        //stree->SetDirectory(0);
-        tree->SetDirectory(0);
-        cout << "N slow = "<<temp_slowtree->GetEntriesFast()<<endl;
-        temp_slowtree->GetEntry(0);
-        cout << "slow time = "<<stimestamp<<endl;
-        for (Int_t i=0; i<nSlowParams; i++) cout<<drv->getSlowBranchName(i)<< " = "<<slowdata[i]<<endl;
+        // read the number of slow events
+        number_of_slow_events = temp_slowtree->GetEntriesFast();
+        // initialize the slow event variables
+        slow_entry = 0;
+        readSlowEvent(slow_entry);
     }
+}
+
+void rootdriver::readSlowEvent(Int_t islow){
+    fs->cd();
+    // read one event from the slow event tree
+    Long64_t nb = 0;
+
+    //slowdata_in.clear();
+    //slowdata_out.clear();
+    // if we can read the next event we get the time marker from the next entry
+    if       (islow<number_of_slow_events-1){
+        // read the next entry of the slow tree to get the time marker for using the next range
+        nb = temp_slowtree->GetEntry(islow+1);
+        time_end_of_range = stimestamp;
+        // read the current entry
+        nb = temp_slowtree->GetEntry(islow);
+    } else if (islow == number_of_slow_events-1) { // last event
+        time_end_of_range = 999999999999999; // never get out of range anymore....
+        nb = temp_slowtree->GetEntry(islow);
+    } else {
+        cout << "rootdriver::readSlowEvent ERROR index out of range. index = "<<islow<<endl;
+    }
+    
+    
 }
 
 void rootdriver::FastFill(event *ev, driver *dr){
@@ -119,17 +148,14 @@ void rootdriver::FastFill(event *ev, driver *dr){
     }
     
     if (slowOn){
-        //temp_slowtree->GetEntry(slow_entry);
-        
-        if (timestamp>=stimestamp && slow_entry<temp_slowtree->GetEntriesFast()) { // if past this slowtimestamp, grab the next slow event
-            //cout << "I have filled in a new slow entry " << slow_entry << endl;
-            temp_slowtree->GetEntry(slow_entry);
+        // read the next slow event only if the timestamp got out of bound....
+        if(timestamp > time_end_of_range){
             slow_entry++;
+            readSlowEvent(slow_entry);
         }
-        
-        
     }
     // write to the tree
+    f->cd();
     tree->Fill();
 }
 
