@@ -1,4 +1,4 @@
-#!/usr/bin/python3.4
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 from xml.dom.minidom import parse, parseString
