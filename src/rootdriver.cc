@@ -110,12 +110,9 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
 }
 
 void rootdriver::readSlowEvent(Int_t islow){
-    fs->cd();
     // read one event from the slow event tree
     Long64_t nb = 0;
 
-    //slowdata_in.clear();
-    //slowdata_out.clear();
     // if we can read the next event we get the time marker from the next entry
     if       (islow<number_of_slow_events-1){
         // read the next entry of the slow tree to get the time marker for using the next range
@@ -130,11 +127,12 @@ void rootdriver::readSlowEvent(Int_t islow){
         cout << "rootdriver::readSlowEvent ERROR index out of range. index = "<<islow<<endl;
     }
     
-    
 }
 
 void rootdriver::FastFill(event *ev, driver *dr){
-    // fill the variables
+    //
+    // fill the variables into the root tree
+    //
     chanNum    = ev->getChannel() % 100;
     integral   = ev->getArea()*calibration_constant[chanNum];
     pkheight   = ev->getPeak();
@@ -149,12 +147,14 @@ void rootdriver::FastFill(event *ev, driver *dr){
     
     if (slowOn){
         // read the next slow event only if the timestamp got out of bound....
-        if(timestamp > time_end_of_range){
+        while ( (timestamp > time_end_of_range) && (slow_entry<number_of_slow_events) ){
             slow_entry++;
             readSlowEvent(slow_entry);
         }
     }
+    //
     // write to the tree
+    //
     f->cd();
     tree->Fill();
 }

@@ -67,21 +67,6 @@ private:
     Float_t 	nDeltaT;
     Int_t 	nDataPoints;
 };
-/*
-class slowevent
-{
-public:
-      slowevent();
-      slowevent(Int_t sid, Double_t sdata, ULong64_t sts);
-      ~slowevent();
-      Int_t	getSlowID(){return slowid;};
-      Double_t	getSlowData(){return slowdata;};
-      ULong64_t 	getSlowTimeStamp(){return slowtimestamp;};
-private:
-      Int_t	slowid;
-      Double_t	slowdata;
-      ULong64_t 	slowtimestamp;
-};
-*/
+
  #endif // __EVENT_H__
 
