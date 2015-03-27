@@ -9,12 +9,32 @@ const float base_max_val = 2000;
 char cmd[256];
 
 /*----------------------------------------------------------------------------*/
+Double_t getDelta(){
+    //
+    // get the time difference between start and end of the file
+    //
+    Double_t time,t_end,t_start;
+    
+    Int_t n_entries = T->GetEntries();
+    T->SetBranchAddress("time",&time);
+    T->GetEntry(0);
+    t_start = time;
+    T->GetEntry(n_entries-1);
+    t_end   = time;
+    
+    return t_end - t_start;
+}
+
+/*----------------------------------------------------------------------------*/
 void plot_spectrum(int ichannel){
     // plot the 1D energy spectrum for channel = ichannel
-    TH1F *_e_good = new TH1F("e_good","e_good",nbin,emin,emax);
+    TH1F *_e_all  = new TH1F("e_all","e_all",nbin,emin,emax);
+    TH1F *_e_good  = new TH1F("e_good","e_good",nbin,emin,emax);
     TH1F *_e_err01 = new TH1F("e_err01","e_err01",nbin,emin,emax);
     TH1F *_e_err02 = new TH1F("e_err02","e_err02",nbin,emin,emax);
     // energy spectrum for good events
+    sprintf(cmd,"channel==%i",ichannel);
+    T->Draw("integral>>e_all",cmd);
     sprintf(cmd,"channel==%i&&error==0",ichannel);
     T->Draw("integral>>e_good",cmd);
     // energy spectrum for the bad ones
@@ -22,11 +42,22 @@ void plot_spectrum(int ichannel){
     T->Draw("integral>>e_err01",cmd);
     sprintf(cmd,"channel==%i&&(error&0x02)!=0",ichannel);
     T->Draw("integral>>e_err02",cmd);
+    // get time range
+    Double_t dt = getDelta();
+    // calculate total rate
+    Double_t n_entries = _e_all->GetEntries();
+    Double_t rate  = n_entries / dt;
+    Double_t drate = sqrt(n_entries)/dt;
     
-    sprintf(cmd,"Spectrum: channel = %i",ichannel);
+    
+    _e_good->Scale(1./dt);
+    _e_err01->Scale(1./dt);
+    _e_err02->Scale(1./dt);
+    
+    sprintf(cmd,"Spectrum: channel = %i. Rate = %6.3f #\pm %6.3f kHz",ichannel,rate/1000,drate/1000);
     _e_good->SetTitle(cmd);
     _e_good->GetXaxis()->SetTitle("E (keV)");
-    _e_good->GetYaxis()->SetTitle("Number of entries");
+    _e_good->GetYaxis()->SetTitle("Rate (Hz)");
     
     // compose the legend for the plot
     TLegend *leg = new TLegend(0.6,0.6,0.89,0.89);
@@ -106,19 +137,21 @@ void plot_baseline(int ichannel){
 }
 
 /*----------------------------------------------------------------------------*/
-void monitor(int ichannel, string plot_type, bool save_plot)
+void monitor(int ichannel, string plot_type, bool log_scale, bool save_plot)
 {
     //
     // monitor plots for Modulation data
     //
     // Input: channel    - channel number [0..7]
     //        plot_type  - what to plot ['spectrum','2d','baseline']
+    //        log_scale  - logarithmic y-axis [true, false]
     //        save_plot  - save the plot to .pdf and .png file [true, false]
     //
     // AP 27-03-2015
     //
     
     gStyle->SetOptStat(0);
+  
     // what to plot?
     if        (plot_type == "spectrum") { // 1D energy spectrum
         plot_spectrum(ichannel);
@@ -129,11 +162,17 @@ void monitor(int ichannel, string plot_type, bool save_plot)
     } else {
         cout<< "Wrong plot type selected"<<endl;
     }
+    // set the logarithmic y-axis if required
+    c1->SetLogy(log_scale);
     
+    // save th plot to file if required
     if(save_plot) {
-        sprintf(cmd,"plots/%s_channel%i.pdf",plot_type.c_str(),ichannel);
+        string tag="lin";
+        if(log_scale) tag = "log";
+
+        sprintf(cmd,"plots/%s_channel%i_%s.pdf",plot_type.c_str(),ichannel,tag.c_str());
         c1->Print(cmd);
-        sprintf(cmd,"plots/%s_channel%i.png",plot_type.c_str(),ichannel);
+        sprintf(cmd,"plots/%s_channel%i_%s.png",plot_type.c_str(),ichannel,tag.c_str());
         c1->Print(cmd);
     }
 }
