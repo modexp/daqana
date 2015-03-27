@@ -1,5 +1,21 @@
 /*----------------------------------------------------------------------------*/
 
+//
+// monitor plots for Modulation data
+//
+// Usage: From root command line type ".x monitor.C(channel, plot_type, log_scale, save_plot)"
+//
+// Input: channel    - channel number [0..7]
+//        plot_type  - what to plot ['spectrum','2d','baseline']
+//        log_scale  - logarithmic y-axis [true, false]
+//        save_plot  - save the plot to .pdf and .png file [true, false]
+//
+//
+// AP 27-03-2015
+//
+
+/*----------------------------------------------------------------------------*/
+
 // ranges for plotting
 const int   nbin = 300;
 const float emin = 0.; // in keV
@@ -9,7 +25,7 @@ const float base_max_val = 2000;
 char cmd[256];
 
 /*----------------------------------------------------------------------------*/
-Double_t getDelta(){
+Double_t get_delta_t(){
     //
     // get the time difference between start and end of the file
     //
@@ -43,7 +59,7 @@ void plot_spectrum(int ichannel){
     sprintf(cmd,"channel==%i&&(error&0x02)!=0",ichannel);
     T->Draw("integral>>e_err02",cmd);
     // get time range
-    Double_t dt = getDelta();
+    Double_t dt = get_delta_t();
     // calculate total rate
     Double_t n_entries = _e_all->GetEntries();
     Double_t rate  = n_entries / dt;
@@ -54,10 +70,12 @@ void plot_spectrum(int ichannel){
     _e_err01->Scale(1./dt);
     _e_err02->Scale(1./dt);
     
+    // plot title
     sprintf(cmd,"Spectrum: channel = %i. Rate = %6.3f #\pm %6.3f kHz",ichannel,rate/1000,drate/1000);
     _e_good->SetTitle(cmd);
+    // x-axis title
     _e_good->GetXaxis()->SetTitle("E (keV)");
-    
+    // y-axis title
     sprintf(cmd,"Rate (Hz / %i keV)",(emax - emin)/nbin);
     _e_good->GetYaxis()->SetTitle(cmd);
     
@@ -69,7 +87,7 @@ void plot_spectrum(int ichannel){
     leg->SetTextSize(0.03);
     leg->SetBorderSize(0);
     
-    // draw it all
+    // draw it all....
     _e_good->Draw();
     _e_err01->SetLineColor(2);
     _e_err01->Draw("same");
@@ -141,17 +159,8 @@ void plot_baseline(int ichannel){
 /*----------------------------------------------------------------------------*/
 void monitor(int ichannel, string plot_type, bool log_scale, bool save_plot)
 {
-    //
-    // monitor plots for Modulation data
-    //
-    // Input: channel    - channel number [0..7]
-    //        plot_type  - what to plot ['spectrum','2d','baseline']
-    //        log_scale  - logarithmic y-axis [true, false]
-    //        save_plot  - save the plot to .pdf and .png file [true, false]
-    //
-    // AP 27-03-2015
-    //
-    
+    // documentation on top of this .C file
+
     gStyle->SetOptStat(0);
   
     // what to plot?
@@ -162,12 +171,13 @@ void monitor(int ichannel, string plot_type, bool log_scale, bool save_plot)
     } else if (plot_type == "baseline"){
         plot_baseline(ichannel);
     } else {
-        cout<< "Wrong plot type selected"<<endl;
+        cout<< "Wrong plot type selected..... look at documentation in monitor.C"<<endl;
+        return;
     }
     // set the logarithmic y-axis if required
     c1->SetLogy(log_scale);
     
-    // save th plot to file if required
+    // save the plot to file
     if(save_plot) {
         string tag="lin";
         if(log_scale) tag = "log";
