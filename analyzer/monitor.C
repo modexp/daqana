@@ -1,7 +1,7 @@
 /*----------------------------------------------------------------------------*/
 
 // ranges for plotting
-const int   nbin = 250;
+const int   nbin = 300;
 const float emin = 0.; // in keV
 const float emax = 3000.; // in keV
 const float adc_max_volt = 2.;
@@ -57,10 +57,12 @@ void plot_spectrum(int ichannel){
     sprintf(cmd,"Spectrum: channel = %i. Rate = %6.3f #\pm %6.3f kHz",ichannel,rate/1000,drate/1000);
     _e_good->SetTitle(cmd);
     _e_good->GetXaxis()->SetTitle("E (keV)");
-    _e_good->GetYaxis()->SetTitle("Rate (Hz)");
+    
+    sprintf(cmd,"Rate (Hz / %i keV)",(emax - emin)/nbin);
+    _e_good->GetYaxis()->SetTitle(cmd);
     
     // compose the legend for the plot
-    TLegend *leg = new TLegend(0.6,0.6,0.89,0.89);
+    TLegend *leg = new TLegend(0.6,0.7,0.89,0.89);
     leg->AddEntry(_e_good,"good events","f");
     leg->AddEntry(_e_err01,"overflow error","f");
     leg->AddEntry(_e_err02,"baseline rms error","f");
@@ -120,7 +122,7 @@ void plot_baseline(int ichannel){
     _b_good->GetYaxis()->SetTitle("Number of entries");
     
     // compose the legend for the plot
-    TLegend *leg = new TLegend(0.6,0.6,0.89,0.89);
+    TLegend *leg = new TLegend(0.6,0.7,0.89,0.89);
     leg->AddEntry(_b_good,"good events","f");
     leg->AddEntry(_b_err01,"overflow error","f");
     leg->AddEntry(_b_err02,"baseline rms error","f");
