@@ -123,6 +123,80 @@ void plot_I(int ichannel){
     
 }
 /*----------------------------------------------------------------------------*/
+void plot_env(){
+    //
+    // plot temperature, humidity, pressure as a function of time
+    //
+    
+    Double_t t0 = get_t0();
+    Double_t t1 = get_t1();
+    TH1F *env = new TH1F("env","env",1,t0,t1);
+    
+    env->Fill(t0+0.01,1000);
+    
+    env->GetYaxis()->SetRangeUser(0.95,1.05);
+    env->SetTitle("Environment stability");
+    env->GetXaxis()->SetTitle("time (sec)");
+    env->GetYaxis()->SetTitle("value / value(t=0)");
+    env->Draw();
+    c1->Update();
+    
+    // get the initial values of the nevironment variables
+    Double_t temp, pres, humid, btot;
+    run->SetBranchAddress("temp",&temp);
+    run->SetBranchAddress("pres",&pres);
+    run->SetBranchAddress("humid",&humid);
+    run->SetBranchAddress("btot",&btot);
+
+    run->GetEntry(0);
+    
+    Double_t T0 = temp;
+    Double_t p0 = pres;
+    Double_t RH0 = humid;
+    Double_t B0 = btot;
+    
+    // make a legend
+    TLegend *leg = new TLegend(0.6,0.7,0.89,0.89);
+    
+    // temperature
+    sprintf(cmd,"temp/%f:time>>hp0",T0);
+    run->Draw(cmd,"","sameprof");
+    hp0->SetMarkerColor(2);
+    hp0->SetLineColor(2);
+    sprintf(cmd, "Temperature: T_{0} = %4.1f ^{#circ}C",T0);
+    leg->AddEntry(hp0,cmd,"f");
+    
+    // pressure
+    sprintf(cmd,"pres/%f:time>>hp1",p0);
+    run->Draw(cmd,"","sameprof");
+    hp1->SetMarkerColor(3);
+    hp1->SetLineColor(3);
+    sprintf(cmd, "Pressure: p_{0} = %4.1f kPa",p0/1000);
+    leg->AddEntry(hp1,cmd,"f");
+    
+    // relative humidity
+    sprintf(cmd,"humid/%f:time>>hp2",RH0);
+    run->Draw(cmd,"","sameprof");
+    hp2->SetMarkerColor(4);
+    hp2->SetLineColor(4);
+    sprintf(cmd, "Humidity: RH_{0} = %4.1f %%",RH0);
+    leg->AddEntry(hp2,cmd,"f");
+    
+    // magnetic field
+    sprintf(cmd,"btot/%f:time>>hp3",B0);
+    run->Draw(cmd,"","sameprof");
+    hp3->SetMarkerColor(6);
+    hp3->SetLineColor(6);
+    sprintf(cmd, "Magnetic field: B_{0} = %4.1f mG",B0);
+    leg->AddEntry(hp3,cmd,"f");
+
+    
+    leg->SetBorderSize(0);
+    leg->Draw();
+    
+}
+
+/*----------------------------------------------------------------------------*/
 void hvmon(string runname, string plot_type, int ichannel, bool save_plot)
 {
     // for documentation see top of this .C macro
@@ -143,6 +217,8 @@ void hvmon(string runname, string plot_type, int ichannel, bool save_plot)
         plot_HV(ichannel);
     } else if (plot_type == "I"){ // Current as a function of tim
         plot_I(ichannel);
+    } else if (plot_type == "env"){ // environment
+        plot_env();
     } else {
         cout<< "Wrong plot type selected..... look at documentation in hvmon.C"<<endl;
         return;
