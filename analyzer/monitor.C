@@ -3,10 +3,11 @@
 //
 // monitor plots for Modulation data
 //
-// Usage: From root command line type ".x monitor.C(channel, plot_type, log_scale, save_plot)"
+// Usage: From root command line type ".x monitor.C(runname, plot_type, channel, log_scale, save_plot)"
 //
-// Input: channel    - channel number [0..7]
+// Input: runname    - name of the run you wish to analyze with the full path added to the rootfile
 //        plot_type  - what to plot ['spectrum','2d','baseline']
+//        channel    - channel number [0..7]
 //        log_scale  - logarithmic y-axis [true, false]
 //        save_plot  - save the plot to .pdf and .png file [true, false]
 //
@@ -15,6 +16,9 @@
 //
 
 /*----------------------------------------------------------------------------*/
+
+TChain *run = new TChain("T");
+TCanvas *c1 = new TCanvas("c1","c1",700,400);
 
 // ranges for plotting
 const int   nbin = 300;
@@ -31,11 +35,11 @@ Double_t get_delta_t(){
     //
     Double_t time,t_end,t_start;
     
-    Int_t n_entries = T->GetEntries();
-    T->SetBranchAddress("time",&time);
-    T->GetEntry(0);
+    Int_t n_entries = run->GetEntries();
+    run->SetBranchAddress("time",&time);
+    run->GetEntry(0);
     t_start = time;
-    T->GetEntry(n_entries-1);
+    run->GetEntry(n_entries-1);
     t_end   = time;
     
     return t_end - t_start;
@@ -50,14 +54,14 @@ void plot_spectrum(int ichannel){
     TH1F *_e_err02 = new TH1F("e_err02","e_err02",nbin,emin,emax);
     // energy spectrum for good events
     sprintf(cmd,"channel==%i",ichannel);
-    T->Draw("integral>>e_all",cmd);
+    run->Draw("integral>>e_all",cmd);
     sprintf(cmd,"channel==%i&&error==0",ichannel);
-    T->Draw("integral>>e_good",cmd);
+    run->Draw("integral>>e_good",cmd);
     // energy spectrum for the bad ones
     sprintf(cmd,"channel==%i&&(error&0x01)!=0",ichannel);
-    T->Draw("integral>>e_err01",cmd);
+    run->Draw("integral>>e_err01",cmd);
     sprintf(cmd,"channel==%i&&(error&0x02)!=0",ichannel);
-    T->Draw("integral>>e_err02",cmd);
+    run->Draw("integral>>e_err02",cmd);
     // get time range
     Double_t dt = get_delta_t();
     // calculate total rate
@@ -65,6 +69,7 @@ void plot_spectrum(int ichannel){
     Double_t rate  = n_entries / dt;
     Double_t drate = sqrt(n_entries)/dt;
     
+    dt = 1;
     
     _e_good->Scale(1./dt);
     _e_err01->Scale(1./dt);
@@ -106,17 +111,17 @@ void plot_2d(int ichannel){
     _2d->GetYaxis()->SetTitle("Pulse height (V)");
     _2d->Draw("");
     
-    T->SetMarkerColor(1);
+    run->SetMarkerColor(1);
     sprintf(cmd,"channel==%i",ichannel);
-    T->Draw("height:integral",cmd,"same");
+    run->Draw("height:integral",cmd,"same");
     
-    T->SetMarkerColor(2);
+    run->SetMarkerColor(2);
     sprintf(cmd,"channel==%i&&(error&0x01)!=0",ichannel);
-    T->Draw("height:integral",cmd,"same");
+    run->Draw("height:integral",cmd,"same");
 
-    T->SetMarkerColor(6);
+    run->SetMarkerColor(6);
     sprintf(cmd,"channel==%i&&(error&0x02)!=0",ichannel);
-    T->Draw("height:integral",cmd,"same");
+    run->Draw("height:integral",cmd,"same");
     
 }
 /*----------------------------------------------------------------------------*/
@@ -127,12 +132,12 @@ void plot_baseline(int ichannel){
     TH1F *_b_err02 = new TH1F("b_err02","b_err02",nbin,0,base_max_val);
     // energy spectrum for good events
     sprintf(cmd,"channel==%i&&error==0",ichannel);
-    T->Draw("baseline>>b_good",cmd);
+    run->Draw("baseline>>b_good",cmd);
     // energy spectrum for the bad ones
     sprintf(cmd,"channel==%i&&(error&0x01)!=0",ichannel);
-    T->Draw("baseline>>b_err01",cmd);
+    run->Draw("baseline>>b_err01",cmd);
     sprintf(cmd,"channel==%i&&(error&0x02)!=0",ichannel);
-    T->Draw("baseline>>b_err02",cmd);
+    run->Draw("baseline>>b_err02",cmd);
     
     sprintf(cmd,"Baseline: channel = %i",ichannel);
     _b_good->SetTitle(cmd);
@@ -157,10 +162,19 @@ void plot_baseline(int ichannel){
 }
 
 /*----------------------------------------------------------------------------*/
-void monitor(int ichannel, string plot_type, bool log_scale, bool save_plot)
+void monitor(string runname, string plot_type, int ichannel, bool log_scale, bool save_plot)
 {
     // documentation on top of this .C file
 
+    // add files to the chain .....
+    sprintf(cmd,"%s*.root",runname.c_str());
+    run->Add(cmd);
+    
+    // open the first file: will be used to retrieve settings
+    sprintf(cmd,"%s_000000.root",runname.c_str());
+    TFile *_file = new TFile(cmd,"READONLY");
+    
+    // no statistics box
     gStyle->SetOptStat(0);
   
     // what to plot?
@@ -182,9 +196,10 @@ void monitor(int ichannel, string plot_type, bool log_scale, bool save_plot)
         string tag="lin";
         if(log_scale) tag = "log";
 
+        TPad *current_pad = (TPad*)gROOT->GetSelectedPad();
         sprintf(cmd,"plots/%s_channel%i_%s.pdf",plot_type.c_str(),ichannel,tag.c_str());
-        c1->Print(cmd);
+        current_pad>Print(cmd);
         sprintf(cmd,"plots/%s_channel%i_%s.png",plot_type.c_str(),ichannel,tag.c_str());
-        c1->Print(cmd);
+        current_pad->Print(cmd);
     }
 }
