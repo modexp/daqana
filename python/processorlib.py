@@ -259,7 +259,7 @@ def generateDriverFile(outdir,filename,calibration):
         #print 'XML:: channel ', index, ' trigger level: ', getSingleElement(active_channel, 'trigger_level'), ' ...'
         fdaq.write(getSingleElement(active_channel, 'trigger_level') + '\n') # write trigger level
         #print 'XML:: channel ', index, ' PMT voltage: ', getSingleElement(active_channel, 'voltage'), ' ...'
-        fdaq.write(getSingleElement(active_channel, 'voltage') + '\n') # write voltage
+        fdaq.write(getSingleElement(active_channel, 'set_voltage') + '\n') # write voltage
     
     
     #print 'XML:: read slow params ...'
