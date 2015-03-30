@@ -130,6 +130,7 @@ void plot_env(){
     
     Double_t t0 = get_t0();
     Double_t t1 = get_t1();
+    
     TH1F *env = new TH1F("env","env",1,t0,t1);
     
     env->Fill(t0+0.01,1000);
@@ -158,10 +159,11 @@ void plot_env(){
     // make a legend
     TLegend *leg = new TLegend(0.6,0.7,0.89,0.89);
     
-    TProfile *hp0 = new TProfile("hp0","hp0",(int)((t1-t0)/60),t0,t1,-10,10);
-    TProfile *hp1 = new TProfile("hp1","hp1",(int)((t1-t0)/60),t0,t1,-10,10);
-    TProfile *hp2 = new TProfile("hp2","hp2",(int)((t1-t0)/60),t0,t1,-10,10);
-    TProfile *hp3 = new TProfile("hp3","hp3",(int)((t1-t0)/60),t0,t1,-10,10);
+    Int_t nbin = (int)((t1-t0)/60);
+    TProfile *hp0 = new TProfile("hp0","hp0",nbin,t0,t1,-10,10);
+    TProfile *hp1 = new TProfile("hp1","hp1",nbin,t0,t1,-10,10);
+    TProfile *hp2 = new TProfile("hp2","hp2",nbin,t0,t1,-10,10);
+    TProfile *hp3 = new TProfile("hp3","hp3",nbin,t0,t1,-10,10);
     
     // temperature
     sprintf(cmd,"temp/%f:time>>hp0",T0);
