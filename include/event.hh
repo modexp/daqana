@@ -3,11 +3,13 @@
 
 #include "TCanvas.h"
 #include "TGraph.h"
+#include "TH1F.h"
 #include "driver.hh"
 #include <vector>
 #include <stdlib.h>
 #include <stdint.h>
 #include "TMath.h"
+#include "TStyle.h"
 
 // N_baseline_calc = nPreTrigger - N_BASELINE_NOT_USED
 //#define N_BASELINE_NOT_USED 5

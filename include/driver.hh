@@ -30,7 +30,7 @@ public:
     Int_t    getNEvent(){return nEvent;};
     Int_t    getNSlowParams(){return nSlow;}
     ULong64_t 	getInitialTime(){return initial_time;}
-    string getActiveChannel(Int_t ichan){return active_channels[ichan];}; 
+    string getActiveChannel(Int_t ichan){return active_channels[ichan];};
     string getDetectorSerial(Int_t ichan){return det_serials[ichan];};
     string getDetectorType(Int_t ichan){return det_types[ichan];};
     string getSource(Int_t ichan){return sources[ichan];};

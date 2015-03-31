@@ -48,7 +48,7 @@ int main(int argc, char **argv)
     // TApplication is needed to plot a canvas with an event
     TApplication *theApp;
     if(graphics) theApp =  new TApplication("tapp", &argc, argv);
-    TCanvas *canv = new TCanvas("c1","c1",0,0,450,450);
+    TCanvas *canv = new TCanvas("c1","c1",500,300);
     // create an instance of teh daq datatype: controls all the binary file handling
     daq myDaq(myDriver);
     // root management
@@ -72,7 +72,7 @@ int main(int argc, char **argv)
         Double_t pk  = ev->getPeak();
         Int_t    ich = ev->getChannel();
         Double_t rms = ev->calculateBaselineRMS();
-        if(graphics) ev->Plot(canv);
+        if(graphics && ( (ev->getErrorCode()&0x01) != 0) && (ich%100 == 3)) ev->Plot(canv);
         // free event
         myDaq.endEvent();
         
