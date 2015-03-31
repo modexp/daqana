@@ -2,6 +2,9 @@
 #include <iostream>
 #include <math.h>
 
+#include "TText.h"
+
+
 event::event(){}
 
 event::event(Int_t iev, Int_t ich, Double_t ts, vector<Double_t>* tr, Bool_t isTestPulse, driver* dr){
@@ -149,9 +152,19 @@ void event::Plot(TCanvas *canv)
     // Graphs for plotting individual pulses
     //TCanvas *canv = new TCanvas("c1","c1",0,0,450,450); // just for plotting individual pulses, can comment out if need
     TGraph *voltages = new TGraph();
-    
     TGraph* g_base = new TGraph();
+    TH1F *pulse = new TH1F("pulse","pulse", 1, 0., 2.1e-6);
+    pulse->GetYaxis()->SetRangeUser(0.,ADC_MAX_VALUE);
+    pulse->GetYaxis()->SetTitleOffset(1.2);
+    pulse->GetXaxis()->SetTitle("time (sec)");
+    pulse->GetYaxis()->SetTitle("ADC");
+    gStyle->SetOptStat(0);
     
+    char tstr[100];
+    sprintf(tstr,"Event = %i",ievent);
+    pulse->SetTitle(tstr);
+
+    cout << "Plot::nDeltaT ="<<nDeltaT<<" npoint = "<<nDataPoints<<endl;
     for (Int_t m = 0; m<(nDataPoints-1); ++m)
     {
         Double_t vv = trace->at(m);
@@ -160,19 +173,26 @@ void event::Plot(TCanvas *canv)
     }
     canv->Clear();
     canv->Flush();
-    voltages->Draw("AL");
+    
+    pulse->Draw();
+    
+    sprintf(tstr,"Peak = %5.2f mV",peak*1000);
+    TText info1(1.2e-6,12000,tstr);
+    info1.Draw();
+    sprintf(tstr,"Area = %5.2f nVs",area*1e9);
+    TText info2(1.2e-6,10000,tstr);
+    info2.Draw();
+    voltages->SetLineColor(4);
+    voltages->Draw("same");
     g_base->SetLineColor(2);
     g_base->Draw("same");
-    cout << "So far we are on wave #: " << ievent <<endl;
-    char tstr[100];
-    sprintf(tstr,"Event = %i",ievent);
+
     if (iLED == true) cout << "This event was a test pulse from the LED" << endl;
-    canv->SetTitle(tstr);
     canv->Modified();
     canv->Update();
-    //char pdfname[256];
-    //sprintf(pdfname,"pdf/shape_%i.pdf",ievent);
-    //canv->Print(pdfname);
+    char pdfname[256];
+    sprintf(pdfname,"pdf/shape_%i.pdf",ievent);
+    canv->Print(pdfname);
     Print();
     
     usleep(1000000);
