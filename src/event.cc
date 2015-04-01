@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include "TText.h"
+#include "TLatex.h"
 
 
 event::event(){}
@@ -40,7 +41,7 @@ void event::InitializeEvent(){
     // correct for clipping events
     for(Int_t i=0; i<trace->size(); i++){
         Double_t val = trace->at(i);
-        if(val<0) trace->at(i) += ADC_MAX_VALUE;
+        if(val<=0) trace->at(i) += ADC_MAX_VALUE;
     }
     
     // calculate BASELINE
@@ -78,7 +79,8 @@ Double_t event::calculatePeak(){
         Double_t val = trace->at(i);
         if(val>pk) pk = val;
         //        if(val<baseline - 100) eventError = (eventError | ADC_OVERFLOW_ERROR);
-        if(val==0) eventError = (eventError | ADC_OVERFLOW_ERROR);
+//        if(val==0) eventError = (eventError | ADC_OVERFLOW_ERROR);
+        if(val>=ADC_MAX_VALUE-1) eventError = (eventError | ADC_OVERFLOW_ERROR);
     }
     
     pk -= baseline;
@@ -177,11 +179,26 @@ void event::Plot(TCanvas *canv)
     pulse->Draw();
     
     sprintf(tstr,"Peak = %5.2f mV",peak*1000);
-    TText info1(1.2e-6,12000,tstr);
+    TText info1(1.2e-6,14000,tstr);
+    info1.SetTextFont(13);
+    info1.SetTextSize(15.);
     info1.Draw();
     sprintf(tstr,"Area = %5.2f nVs",area*1e9);
-    TText info2(1.2e-6,10000,tstr);
+    TText info2(1.2e-6,12000,tstr);
+    info2.SetTextFont(13);
+    info2.SetTextSize(15.);
     info2.Draw();
+    sprintf(tstr,"Baseline = %5.2f counts", baseline);
+    TText info3(1.2e-6,10000,tstr);
+    info3.SetTextFont(13);
+    info3.SetTextSize(15.);
+    info3.Draw();
+    sprintf(tstr,"RMS = %5.2f counts", baselineRMS);
+    TText info4(1.2e-6,8000,tstr);
+    info4.SetTextFont(13);
+    info4.SetTextSize(15.);
+    info4.Draw();
+    
     voltages->SetLineColor(4);
     voltages->Draw("same");
     g_base->SetLineColor(2);
@@ -193,14 +210,11 @@ void event::Plot(TCanvas *canv)
     char pdfname[256];
     sprintf(pdfname,"pdf/shape_%i.pdf",ievent);
     canv->Print(pdfname);
+    sprintf(pdfname,"pdf/shape_%i.png",ievent);
+    canv->Print(pdfname);
     Print();
     
     usleep(1000000);
-    //canv->Close();
-    //delete voltages;
-    //delete g_base;
-    
-    
 }
 
 void event::Print()
