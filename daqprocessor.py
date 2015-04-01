@@ -1,7 +1,9 @@
-#!/usr/bin/python3.4
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
+import sys
+sys.path.append('python')
 
-from python.processorlib import *
+from processorlib import *
 
 ###############################################################################
 
