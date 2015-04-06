@@ -35,6 +35,8 @@ if slowOn:
 
 
 if fastOn: 
+  cmds_to_ex = []
+  child_pids = []
   # split files into nb_processes lists
   split_file_ids = dict([[process_nb, []] for process_nb in range(0, MAX_NB_PROCESSES)])
   for file_id in range(0, nb_files):
@@ -66,8 +68,8 @@ if fastOn:
               	cmd_string = cmd_string + ' -l'
 	      if(slowOn):
               	cmd_string = cmd_string + ' -s'
-	      if(fastOn):
-              	cmd_string = cmd_string + ' -f'
+	      #if(fastOn):
+              #	cmd_string = cmd_string + ' -f'
 	      if((not fastOn) and (not slowOn)):
               	print 'MAIN:: User did not specify which data to parse, only filling fast data'
 		#cmd_string = cmd_string + ' -s'
