@@ -53,7 +53,7 @@ int main(int argc, char **argv)
         sev = myDaq.readSlowEvent();
         new_stime = myRoot.SlowFill(sev, old_stime);
         old_stime = new_stime;
-        delete sev;
+//        delete sev;
     }
     //cout << "I am done processing slow events!!!! " << endl;
     
