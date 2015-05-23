@@ -84,7 +84,7 @@ for file_id in range(0, nb_files_cal):
     cmd_string = './daqana -i ' + daqfile
     if(longRoot):
         cmd_string = cmd_string + ' -l'
-    if((not fastOn) and (not slowOn)):
+    if(not slowOn):
         print('MAIN:: User did not specify which data to parse, only filling fast data')
 
     print('MAIN:: Processing ' + filename)
@@ -126,7 +126,7 @@ for file_id in range(0, nb_files):
         cmd_string = cmd_string + ' -l'
     if(slowOn):
         cmd_string = cmd_string + ' -s'
-    if((not fastOn) and (not slowOn)):
+    if(not slowOn):
         print('MAIN:: User did not specify which data to parse, only filling fast data')
 
     print('MAIN:: Processing ' + filename)

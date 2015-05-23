@@ -34,6 +34,7 @@ if slowOn:
   print('MAIN:: Done parsing slow data, moving on to fast data')
 
 
+fastOn = true
 if fastOn: 
   cmds_to_ex = []
   child_pids = []
