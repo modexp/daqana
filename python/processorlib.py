@@ -50,7 +50,7 @@ def parseArguments(argv):
         elif opt in ("-c", "--cal"):
             calFile = arg
 
-    return inDir, outDir, grafOn, longRoot, slowOn, fastOn, calFile
+    return inDir, outDir, grafOn, longRoot, slowOn, calFile
 
 
 # function to retreive a single parameter from the xml file
