@@ -17,7 +17,6 @@ output_basedir = "/data/atlas/users/acolijn/Modulation"
 
 import sys
 sys.path.append('python')
-
 from processorlib import *
 
 
@@ -29,12 +28,15 @@ from processorlib import *
 
 print('MAIN:: Welcome to the modulation daq-processor...')
 # parse the IO arguments below
-filebase, outdir, grafOn, longRoot, slowOn, fastOn, dummy = parseArguments(sys.argv[1:])
+filebase, dummy1, grafOn, longRoot, slowOn, dummy2 = parseArguments(sys.argv[1:])
 
 # retriever the run name
 run = filebase.split('/')[-1]
 if (run == ""):
   run = filebase.split('/')[len(filebase.split('/'))-2]
+
+# compose the output directory
+outdir = output_basedir + '/' + run
 
 # make the output directory if it is not there yet
 if not os.path.exists(outdir):
@@ -53,7 +55,9 @@ nb_files = len(filenames)
 nb_sfiles = len(slownames)
 slownames.sort()
 
+#
 # process the slow data
+#
 if slowOn:
   print('MAIN:: Beginning to parse slow data')
   for i in range(nb_sfiles):
@@ -64,7 +68,9 @@ if slowOn:
     os.system(cmd_string)
   print('MAIN:: Done parsing slow data, moving on to fast data')
 
+#
 # run without calibration on a subset of the data
+#
 if (nb_files < 10):
    nb_files_cal = nb_files
 else:
@@ -87,8 +93,9 @@ for file_id in range(0, nb_files_cal):
     print('MAIN:: Remove ' + daqfile)
     cmd_string = 'rm -f ' + daqfile
     os.system(cmd_string)
-
+#
 # make the calibration
+#
 calscript = modulation_basedir+'/analysis/calibration/do_calibrate.C'
 calibration = output_basedir+'/calibration/CAL_'+run+'.root'
 fout = open(calscript,'w')
@@ -103,7 +110,9 @@ fout.close()
 cmd_string = 'root -b -q ' + calscript
 os.system(cmd_string)
 
+#
 # run with calibration
+#
 for file_id in range(0, nb_files):
     print('FILE          file_id:',file_id)
     # generate driver file

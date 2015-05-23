@@ -28,7 +28,7 @@ def parseArguments(argv):
     fastOn    = 0
     calFile   = 'NULL.root'
     try:
-        opts, args = getopt.getopt(argv,"hlgsfi:o:c:",["long","graf","slow","fast","idir=","odir=","cal"])
+        opts, args = getopt.getopt(argv,"hlgsi:o:c:",["long","graf","slow","fast","idir=","odir=","cal"])
     except getopt.GetoptError:
         print('daqprocessor.py -i <inputfile> -o <outputfile> -g -s -f')
         sys.exit(2)
@@ -47,8 +47,6 @@ def parseArguments(argv):
             longRoot = 1
         elif opt in ("-s", "--slow"):
             slowOn = 1
-        elif opt in ("-f", "--fast"):
-            fastOn = 1
         elif opt in ("-c", "--cal"):
             calFile = arg
 
