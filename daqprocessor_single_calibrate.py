@@ -14,11 +14,116 @@
 modulation_basedir = "/user/z37/Modulation"
 # output_basedir to be set to directory where teh output structure should be
 output_basedir = "/data/atlas/users/acolijn/Modulation"
+#  run dir: where do you want all the scipts to live?
+run_dir = modulation_basedir + "/stoomboot"
 
 import sys
 sys.path.append('python')
 from processorlib import *
 
+############################################################################################
+
+
+# global initialization of the run processing
+
+print('MAIN:: Welcome to the modulation daq-processor...')
+# parse the IO arguments below
+filebase, dummy1, grafOn, longRoot, dummy2, dummy3 = parseArguments(sys.argv[1:])
+
+# retrieve the run name
+run = filebase.split('/')[-1]
+if (run == ""):
+    run = filebase.split('/')[len(filebase.split('/'))-2]
+
+# compose the output directory
+outdir = output_basedir + '/' + run
+
+# make the output directory if it is not there yet
+if not os.path.exists(outdir):
+    cmd = 'mkdir ' + outdir
+    os.system(cmd)
+
+# calibration filename
+calibration = output_basedir+'/calibration/CAL_'+run+'.root'
+
+
+############################################################################################
+
+#
+# process slow control data
+#
+def process_slow_data():
+    #  get the files from the data directory
+    filenames, slownames = getFilenames(filebase)
+    nb_files = len(filenames)
+    nb_sfiles = len(slownames)
+    slownames.sort()
+    
+    print('MAIN:: Beginning to parse slow data')
+    for i in range(nb_sfiles):
+        daqfile = generateDriverFile(outdir,slownames[i], 'NULL.root')
+        slow_cmd_string = './slowdaq -i ' + daqfile
+        os.system(slow_cmd_string)
+        cmd_string = 'rm -f ' + daqfile
+        os.system(cmd_string)
+    print('MAIN:: Done parsing slow data, moving on to fast data')
+
+############################################################################################
+
+#
+# process fast data without calibration and then make teh energy calibration
+#
+def make_calibration(calib):
+    #
+    # make the calibration
+    #
+    print('MAIN:: Make energy calibration')
+    calscript = run_dir+'/do_calibrate_'+run+'.C'
+    fout = open(calscript,'w')
+    fin  = open(modulation_basedir+'/analysis/calibration/do_calibrate.C.TEMPLATE', 'r')
+    for line in fin:
+        line = line.replace('DATA_DIR',outdir+'/')
+        line = line.replace('CAL_FILE',calib)
+        fout.write(line)
+    fin.close()
+    fout.close()
+    
+    cmd_string = 'root -b -q ' + calscript
+    os.system(cmd_string)
+
+    return
+
+############################################################################################
+
+#
+# run with calibration
+#
+def process_fast_data(calib):
+#  get the files from the data directory
+    filenames, slownames = getFilenames(filebase)
+    nb_files = len(filenames)
+
+    # no calibration? just run over 10 files...
+    if (calib == 'NULL.root' and nb_files>10):
+        nb_files = 10
+
+    print('MAIN:: Run daqana with energy calibration')
+    for file_id in range(0, nb_files):
+        #for file_id in range(0, 10):
+        print('FILE          file_id:',file_id)
+        # generate driver file
+        filename = filenames[file_id]
+        daqfile = generateDriverFile(outdir,filename,calib)
+        
+        cmd_string = './daqana -i ' + daqfile
+        cmd_string = cmd_string + ' -s -l'
+        
+        print('MAIN:: Processing ' + filename)
+        os.system(cmd_string)
+        print('MAIN:: Processing complete for ' + filename)
+        print('MAIN:: Remove ' + daqfile)
+        cmd_string = 'rm -f ' + daqfile
+        os.system(cmd_string)
 
 ###############################################################################
 
@@ -26,115 +131,39 @@ from processorlib import *
 # MAIN python code
 #
 
-print('MAIN:: Welcome to the modulation daq-processor...')
-# parse the IO arguments below
-filebase, dummy1, grafOn, longRoot, slowOn, dummy2 = parseArguments(sys.argv[1:])
-
-# retriever the run name
-run = filebase.split('/')[-1]
-if (run == ""):
-  run = filebase.split('/')[len(filebase.split('/'))-2]
-
-# compose the output directory
-outdir = output_basedir + '/' + run
-
-# make the output directory if it is not there yet
-if not os.path.exists(outdir):
-  cmd = 'mkdir ' + outdir
-  os.system(cmd)
-
-# make the calibration directory for the 1st round of processing if it is not there yet
-caldir = outdir + '/calibration'
-if not os.path.exists(caldir):
-  cmd = 'mkdir ' + caldir
-  os.system(cmd)
-
-#  get the files from the data directory
-filenames, slownames = getFilenames(filebase)
-nb_files = len(filenames)
-nb_sfiles = len(slownames)
-slownames.sort()
-
 #
 # process the slow data
 #
-if slowOn:
-  print('MAIN:: Beginning to parse slow data')
-  for i in range(nb_sfiles):
-    daqfile = generateDriverFile(outdir,slownames[i], 'NULL.root')
-    slow_cmd_string = './slowdaq -i ' + daqfile
-    os.system(slow_cmd_string)
-    cmd_string = 'rm -f ' + daqfile
-    os.system(cmd_string)
-  print('MAIN:: Done parsing slow data, moving on to fast data')
+process_slow_data()
 
 #
-# run without calibration on a subset of the data
+# run without calibration on a subset of the data and make energy calibration
 #
-if (nb_files < 10):
-   nb_files_cal = nb_files
-else:
-   nb_files_cal = 10
-
-for file_id in range(0, nb_files_cal):
-    # generate driver file
-    filename = filenames[file_id]
-    daqfile = generateDriverFile(caldir,filename,'NULL.root')
-
-    cmd_string = './daqana -i ' + daqfile
-    if(longRoot):
-        cmd_string = cmd_string + ' -l'
-    if(not slowOn):
-        print('MAIN:: User did not specify which data to parse, only filling fast data')
-
-    print('MAIN:: Processing ' + filename)
-    os.system(cmd_string)
-    print('MAIN:: Processing complete for ' + filename)
-    print('MAIN:: Remove ' + daqfile)
-    cmd_string = 'rm -f ' + daqfile
-    os.system(cmd_string)
-#
-# make the calibration
-#
-calscript = modulation_basedir+'/analysis/calibration/do_calibrate.C'
-calibration = output_basedir+'/calibration/CAL_'+run+'.root'
-fout = open(calscript,'w')
-fin  = open(calscript+'.TEMPLATE', 'r')
-for line in fin:
-    line = line.replace('DATA_DIR',caldir+'/')
-    line = line.replace('CAL_FILE',calibration)
-    fout.write(line)
-fin.close()
-fout.close()
-
-cmd_string = 'root -b -q ' + calscript
-os.system(cmd_string)
+process_fast_data('NULL.root')
+make_calibration(calibration)
 
 #
 # run with calibration
 #
-for file_id in range(0, nb_files):
-    print('FILE          file_id:',file_id)
-    # generate driver file
-    filename = filenames[file_id]
-    daqfile = generateDriverFile(outdir,filename,calibration)
+process_fast_data(calibration)
 
-    cmd_string = './daqana -i ' + daqfile
-    if(grafOn):
-        cmd_string = cmd_string + ' -g'
-    if(longRoot):
-        cmd_string = cmd_string + ' -l'
-    if(slowOn):
-        cmd_string = cmd_string + ' -s'
-    if(not slowOn):
-        print('MAIN:: User did not specify which data to parse, only filling fast data')
+#
+# After run analysis
+#
+print('MAIN:: Make gain stability graphs')
+gainscript = run_dir +'/do_gain_'+run+'.C'
+gain_file = output_basedir+'/calibration/GAIN_'+run+'.root'
+fout = open(gainscript,'w')
+fin  = open(modulation_basedir+'/analysis/calibration/do_gain.C.TEMPLATE', 'r')
+for line in fin:
+    line = line.replace('DATA_DIR',outdir+'/')
+    line = line.replace('GAIN_FILE',gain_file)
+    print("GAIN "+line)
+    fout.write(line)
+fin.close()
+fout.close()
 
-    print('MAIN:: Processing ' + filename)
-    os.system(cmd_string)
-    print('MAIN:: Processing complete for ' + filename)
-    print('MAIN:: Remove ' + daqfile)
-    cmd_string = 'rm -f ' + daqfile
-    os.system(cmd_string)
-
+cmd_string = 'root -b -q ' + gainscript
+os.system(cmd_string)
 
 print('MAIN:: Exit from the daq-processor. bye-bye.')
