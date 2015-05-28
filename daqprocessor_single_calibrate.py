@@ -82,7 +82,7 @@ def make_calibration(calib):
     fout = open(calscript,'w')
     fin  = open(modulation_basedir+'/analysis/calibration/do_calibrate.C.TEMPLATE', 'r')
     for line in fin:
-        line = line.replace('DATA_DIR',outdir+'/')
+        line = line.replace('DATA_DIR',outdir+'/calibration/')
         line = line.replace('CAL_FILE',calib)
         fout.write(line)
     fin.close()
@@ -102,10 +102,19 @@ def process_fast_data(calib):
 #  get the files from the data directory
     filenames, slownames = getFilenames(filebase)
     nb_files = len(filenames)
+    outdir_tot = outdir
+
 
     # no calibration? just run over 10 files...
     if (calib == 'NULL.root' and nb_files>10):
         nb_files = 10
+    
+    if (calib == 'NULL.root'):
+        outdir_tot = outdir + '/calibration/'
+        # make the output directory if it is not there yet
+        if not os.path.exists(outdir_tot):
+            cmd = 'mkdir ' + outdir_tot
+            os.system(cmd)
 
     print('MAIN:: Run daqana with energy calibration')
     for file_id in range(0, nb_files):
@@ -113,10 +122,15 @@ def process_fast_data(calib):
         print('FILE          file_id:',file_id)
         # generate driver file
         filename = filenames[file_id]
-        daqfile = generateDriverFile(outdir,filename,calib)
+        daqfile = generateDriverFile(outdir_tot,filename,calib)
         
         cmd_string = './daqana -i ' + daqfile
-        cmd_string = cmd_string + ' -s -l'
+        if (calib != 'NULL.root'):
+          # include teh slow data
+          cmd_string = cmd_string + ' -s -l'
+        else:
+          # no slow data when we do the calibration
+          cmd_string = cmd_string + ' -l'
         
         print('MAIN:: Processing ' + filename)
         os.system(cmd_string)
@@ -150,20 +164,20 @@ process_fast_data(calibration)
 #
 # After run analysis
 #
-print('MAIN:: Make gain stability graphs')
-gainscript = run_dir +'/do_gain_'+run+'.C'
-gain_file = output_basedir+'/calibration/GAIN_'+run+'.root'
-fout = open(gainscript,'w')
-fin  = open(modulation_basedir+'/analysis/calibration/do_gain.C.TEMPLATE', 'r')
+print('MAIN:: Make analyzer  graphs')
+analyzerscript = run_dir +'/do_analyzer_'+run+'.C'
+analyzer_file = output_basedir+'/calibration/ANA_'+run+'.root'
+fout = open(analyzerscript,'w')
+fin  = open(modulation_basedir+'/analysis/calibration/do_analyzer.C.TEMPLATE', 'r')
 for line in fin:
     line = line.replace('DATA_DIR',outdir+'/')
-    line = line.replace('GAIN_FILE',gain_file)
-    print("GAIN "+line)
+    line = line.replace('ANA_FILE',analyzer_file)
+    print("ANA "+line)
     fout.write(line)
 fin.close()
 fout.close()
 
-cmd_string = 'root -b -q ' + gainscript
+cmd_string = 'root -b -q ' + analyzerscript
 os.system(cmd_string)
 
 print('MAIN:: Exit from the daq-processor. bye-bye.')
