@@ -29,6 +29,7 @@ event::event(Int_t iev, Int_t ich, Double_t ts, vector<Double_t>* tr, Bool_t isT
     nDeltaT = dr->getDeltaT();
     nDataPoints = dr->getNSample();
     
+    
     InitializeEvent();
 }
 
@@ -73,19 +74,23 @@ Double_t event::calculateBaselineRMS(){
 }
 
 Double_t event::calculatePeak(){
-    
+    n_in_peak = 0;
     Double_t pk = -9999;
     for(Int_t i=0; i<trace->size(); i++){
         Double_t val = trace->at(i);
         if(val>pk) pk = val;
-        //        if(val<baseline - 100) eventError = (eventError | ADC_OVERFLOW_ERROR);
-//        if(val==0) eventError = (eventError | ADC_OVERFLOW_ERROR);
+        // error if we have an ADC overflow
         if(val>=ADC_MAX_VALUE-1) eventError = (eventError | ADC_OVERFLOW_ERROR);
+        
+        if((val - baseline > THRESHOLD_VALUE) && i > trace->size()-10) n_in_peak++;
     }
     
     pk -= baseline;
     
     pk *= ADC_MAX_VOLTAGE / ADC_MAX_VALUE;
+    
+    // this is a double hit event
+    if(n_in_peak > 2) eventError = (eventError | LONG_PEAK_ERROR);
     
     return pk;
 }

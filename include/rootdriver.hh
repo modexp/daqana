@@ -3,6 +3,7 @@
 
 #include <TFile.h>
 #include <TTree.h>
+#include <TH1F.h>
 
 
 #include <vector>
@@ -41,6 +42,7 @@ private:
     Double_t  	timestamp;
     Int_t   	isTestPulse;
     Int_t   	errorCode;
+    Int_t       n_over_threshold;
     
     Bool_t 	longRoot;
     
