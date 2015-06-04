@@ -24,12 +24,11 @@
 // define the event error codes
 #define ADC_OVERFLOW_ERROR 0x01
 #define BASELINE_RMS_ERROR 0x02
-#define LONG_PEAK_ERROR    0x04
+#define DOUBLE_PEAK_ERROR  0x04
 
-// define the threshold value for hit counting
-#define THRESHOLD_VALUE 1000
-#define NUMBER_OF_HITS_AT_END 25
-
+// bins to count parts of our integral ....
+// used to calculate energy ratios to discriminate between single and double peaks
+#define NBIN_RATIO 15+24
 
 using namespace std;
 
@@ -53,7 +52,7 @@ public:
     Double_t      getBaseline() {return baseline;};
     Double_t      getBaselineRMS() {return baselineRMS;};
     
-    Int_t         getNumberAboveThreshold(){return n_in_peak;};
+    Double_t      getEnergyRatio(){return e_ratio;};
     
     Double_t      calculateBaselineRMS();
     Double_t      calculateBaseline();
@@ -78,7 +77,7 @@ private:
     Float_t 	nDeltaT;
     Int_t 	nDataPoints;
     
-    Int_t         n_in_peak;
+    Double_t      e_ratio;
 };
 
  #endif // __EVENT_H__

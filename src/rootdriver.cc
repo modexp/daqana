@@ -19,7 +19,7 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
     timestamp = 0;
     isTestPulse = false;
     errorCode = 0;
-    n_over_threshold = 0;
+    energyRatio = 0;
     
     // calibration constants
     for(int ich = 0; ich < NUMBER_OF_CHANNELS; ich++) {
@@ -62,7 +62,7 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
     if(longRoot){
         tree->Branch("baseline", &baseline, "baseline/f");
         tree->Branch("rms", &baselineRMS, "baselineRMS/f");
-        tree->Branch("nhit", &n_over_threshold, "nhit/I");
+        tree->Branch("ratio", &energyRatio, "ratio/f");
     }
     
     //
@@ -141,11 +141,11 @@ void rootdriver::FastFill(event *ev, driver *dr){
     timestamp  = ev->getTimeStamp();
     isTestPulse = ev->getIsTestPulse();
     errorCode   = ev->getErrorCode();
-    n_over_threshold = ev->getNumberAboveThreshold();
-    
+
     if(longRoot){
         baseline    = ev->getBaseline();
         baselineRMS = ev->getBaselineRMS();
+        energyRatio = ev->getEnergyRatio();
     }
     
     if (slowOn){

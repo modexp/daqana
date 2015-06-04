@@ -42,7 +42,7 @@ private:
     Double_t  	timestamp;
     Int_t   	isTestPulse;
     Int_t   	errorCode;
-    Int_t       n_over_threshold;
+    Float_t     energyRatio;
     
     Bool_t 	longRoot;
     

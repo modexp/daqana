@@ -74,23 +74,17 @@ Double_t event::calculateBaselineRMS(){
 }
 
 Double_t event::calculatePeak(){
-    n_in_peak = 0;
     Double_t pk = -9999;
     for(Int_t i=0; i<trace->size(); i++){
         Double_t val = trace->at(i);
         if(val>pk) pk = val;
         // error if we have an ADC overflow
         if(val>=ADC_MAX_VALUE-1) eventError = (eventError | ADC_OVERFLOW_ERROR);
-        
-        if((val - baseline > THRESHOLD_VALUE) && i > trace->size()-NUMBER_OF_HITS_AT_END) n_in_peak++;
     }
     
     pk -= baseline;
     
     pk *= ADC_MAX_VOLTAGE / ADC_MAX_VALUE;
-    
-    // this is a double hit event: not flagged as an error, since not very effective
-    // // if(n_in_peak > 2) eventError = (eventError | LONG_PEAK_ERROR);
     
     return pk;
 }
@@ -98,13 +92,26 @@ Double_t event::calculatePeak(){
 Double_t event::calculateIntegral(){
     
     Double_t I = 0;
+    
+    Double_t I1 = 0;
+    
     for(Int_t i=0; i<trace->size(); i++){
         Double_t val = trace->at(i);
         I+=val;
+        
+        if(i<NBIN_RATIO) I1+=val;
     }
-    
+    //
     I*=nDeltaT;
     I-= (baseline*nDeltaT*nDataPoints);
+    //
+    I1*=nDeltaT;
+    I1-= (baseline*nDeltaT*(NBIN_RATIO-1));
+
+    e_ratio = I1 / I;
+    
+    if(e_ratio < 0.8 || e_ratio > 1.0) eventError = (eventError | DOUBLE_PEAK_ERROR);
+    
     I*= ADC_MAX_VOLTAGE / ADC_MAX_VALUE;
     //    cout<< "DELTAT = "<<drv.getDeltaT()<< " I = "<<I<<endl;
     return I;
