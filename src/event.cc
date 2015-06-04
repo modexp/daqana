@@ -82,15 +82,15 @@ Double_t event::calculatePeak(){
         // error if we have an ADC overflow
         if(val>=ADC_MAX_VALUE-1) eventError = (eventError | ADC_OVERFLOW_ERROR);
         
-        if((val - baseline > THRESHOLD_VALUE) && i > trace->size()-10) n_in_peak++;
+        if((val - baseline > THRESHOLD_VALUE) && i > trace->size()-NUMBER_OF_HITS_AT_END) n_in_peak++;
     }
     
     pk -= baseline;
     
     pk *= ADC_MAX_VOLTAGE / ADC_MAX_VALUE;
     
-    // this is a double hit event
-    if(n_in_peak > 2) eventError = (eventError | LONG_PEAK_ERROR);
+    // this is a double hit event: not flagged as an error, since not very effective
+    // // if(n_in_peak > 2) eventError = (eventError | LONG_PEAK_ERROR);
     
     return pk;
 }

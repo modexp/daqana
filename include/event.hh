@@ -28,6 +28,7 @@
 
 // define the threshold value for hit counting
 #define THRESHOLD_VALUE 1000
+#define NUMBER_OF_HITS_AT_END 25
 
 
 using namespace std;
