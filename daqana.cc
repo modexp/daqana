@@ -72,7 +72,8 @@ int main(int argc, char **argv)
         Double_t pk  = ev->getPeak();
         Int_t    ich = ev->getChannel();
         Double_t rms = ev->calculateBaselineRMS();
-        if(graphics && ( (ev->getErrorCode()&0x01) != 0) && (ich%100 == 3)) ev->Plot(canv);
+        //if(graphics && ( (ev->getErrorCode()&0x04) != 0) ) ev->Plot(canv);
+        if(graphics && (ev->getErrorCode() == 0 ) ) ev->Plot(canv);
         // free event
         myDaq.endEvent();
         

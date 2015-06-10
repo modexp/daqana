@@ -175,7 +175,7 @@ void event::Plot(TCanvas *canv)
     gStyle->SetOptStat(0);
     
     char tstr[100];
-    sprintf(tstr,"Event = %i",ievent);
+    sprintf(tstr,"Event = %i Channel = %i",ievent,ichannel);
     pulse->SetTitle(tstr);
 
     cout << "Plot::nDeltaT ="<<nDeltaT<<" npoint = "<<nDataPoints<<endl;
@@ -210,6 +210,12 @@ void event::Plot(TCanvas *canv)
     info4.SetTextFont(13);
     info4.SetTextSize(15.);
     info4.Draw();
+
+    sprintf(tstr,"error code = 0x%02x", eventError);
+    TText info5(1.2e-6,6000,tstr);
+    info5.SetTextFont(13);
+    info5.SetTextSize(15.);
+    info5.Draw();
     
     voltages->SetLineColor(4);
     voltages->Draw("same");
@@ -233,11 +239,13 @@ void event::Print()
 {
     cout <<"event::Print() "<<endl;
     cout <<"event::Print() ievent      ="<<ievent<<endl;
+    cout <<"event::Print() channel     ="<<ichannel<<endl;
     cout <<"event::Print() ts          ="<<timestamp<<endl;
     cout <<"event::Print() peak        ="<<peak<<endl;
     cout <<"event::Print() area        ="<<area<<endl;
     cout <<"event::Print() baseline    ="<<baseline<< " calculated from "<<nBaselineCalc<<" bins"<<endl;
     cout <<"event::Print() baselineRMS ="<<baselineRMS<<endl;
+    cout <<"event::Print() error       ="<<eventError<<endl;
     cout <<"event::Print()           trace:";
     for(Int_t i=0; i<trace->size(); i++) cout<<trace->at(i)<<", ";
     
