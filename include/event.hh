@@ -20,7 +20,8 @@
 // ADC settings
 #define ADC_MAX_VALUE   16384
 #define ADC_MAX_VOLTAGE 2.0
-
+// maximum negative derivative
+#define MAX_DERIVATIVE 3000
 // define the event error codes
 #define ADC_OVERFLOW_ERROR 0x01
 #define BASELINE_RMS_ERROR 0x02

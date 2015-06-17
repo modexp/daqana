@@ -75,11 +75,19 @@ Double_t event::calculateBaselineRMS(){
 
 Double_t event::calculatePeak(){
     Double_t pk = -9999;
+
+    Double_t val     = trace->at(0);
+    Double_t val_old = val;
+
     for(Int_t i=0; i<trace->size(); i++){
-        Double_t val = trace->at(i);
+        val = trace->at(i);
         if(val>pk) pk = val;
         // error if we have an ADC overflow
         if(val>=ADC_MAX_VALUE-1) eventError = (eventError | ADC_OVERFLOW_ERROR);
+        // error if we have an ADC overflow or if we have a huge negative derivative (even better cut I think)
+        if(val_old - val > MAX_DERIVATIVE) eventError = (eventError | ADC_OVERFLOW_ERROR);
+
+        val_old = val;
     }
     
     pk -= baseline;
