@@ -131,6 +131,9 @@ def process_fast_data(calib):
         else:
           # no slow data when we do the calibration
           cmd_string = cmd_string + ' -l'
+
+        if(grafOn):
+	  cmd_string = cmd_string + ' -g'
         
         print('MAIN:: Processing ' + filename)
         os.system(cmd_string)
