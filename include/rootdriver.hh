@@ -17,6 +17,7 @@
 using namespace std;
 
 #define NUMBER_OF_CHANNELS 8
+#define MAX_PARAMETERS 3
 
 class rootdriver
 {
@@ -71,7 +72,7 @@ private:
     Int_t 	slow_entry;
     Int_t   number_of_slow_events;
     
-    Double_t calibration_constant[NUMBER_OF_CHANNELS];
+    Double_t calibration_constant[NUMBER_OF_CHANNELS][MAX_PARAMETERS];
     
 };
 

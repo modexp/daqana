@@ -23,7 +23,10 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
     
     // calibration constants
     for(int ich = 0; ich < NUMBER_OF_CHANNELS; ich++) {
-        calibration_constant[ich] = 1.0;
+        for (int ipar=0; ipar<MAX_PARAMETERS; ipar++){
+            calibration_constant[ich][ipar] = 0.0;
+        }
+        calibration_constant[ich][1] = 1.0;
     }
     
     // read the calibration constants if you wish
@@ -33,9 +36,13 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
         TParameter<double>* cal;
         char tmp[100];
         for(int ich = 0; ich<NUMBER_OF_CHANNELS; ich++){
-            sprintf(tmp,"cal_ch%02d",ich);
-            cal = (TParameter<double>*)g->Get(tmp);
-            calibration_constant[ich] = cal->GetVal();
+            for (int ipar=0; ipar<MAX_PARAMETERS; ipar++){
+                
+                sprintf(tmp,"cal_ch%02d_c%i",ich,ipar);
+                cal = (TParameter<double>*)g->Get(tmp);
+                calibration_constant[ich][ipar] = cal->GetVal();
+                
+            }
         }
         g->Close();
         
@@ -68,7 +75,7 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
     //
     // Open the slow control datafile + initialize the data + add branches to the output tree
     //
-
+    
     // variables for slow data
     Int_t nSlowParameters;
     const char* slowbranchname;
@@ -93,8 +100,8 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
             //cout << slowbranchname << endl;
             strncpy(buffer, slowbranchname, sizeof(buffer));
             strncat(buffer, type, sizeof(buffer));
-//            cout << "SLOWBRANCHNAME >>"<<slowbranchname<<"<<" << endl;
-//            cout << "BUFFER         >>"<<buffer<<"<<" << endl;
+            //            cout << "SLOWBRANCHNAME >>"<<slowbranchname<<"<<" << endl;
+            //            cout << "BUFFER         >>"<<buffer<<"<<" << endl;
             temp_slowtree->SetBranchAddress(slowbranchname, &slowdata[i]);
             //stree->Branch(slowbranchname, &slowdata[i], buffer);
             f->cd();
@@ -114,7 +121,7 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
 void rootdriver::readSlowEvent(Int_t islow){
     // read one event from the slow event tree
     Long64_t nb = 0;
-
+    
     // if we can read the next event we get the time marker from the next entry
     if       (islow<number_of_slow_events-1){
         // read the next entry of the slow tree to get the time marker for using the next range
@@ -136,12 +143,18 @@ void rootdriver::FastFill(event *ev, driver *dr){
     // fill the variables into the root tree
     //
     chanNum    = ev->getChannel() % 100;
-    integral   = ev->getArea()*calibration_constant[chanNum];
+    
+    Double_t A = ev->getArea();
+    integral = 0;
+    // apply the calibration
+    for(int ipar=0; ipar<MAX_PARAMETERS; ipar++){
+        integral += calibration_constant[chanNum][ipar]*pow(A,ipar);
+    }
     pkheight   = ev->getPeak();
     timestamp  = ev->getTimeStamp();
     isTestPulse = ev->getIsTestPulse();
     errorCode   = ev->getErrorCode();
-
+    
     if(longRoot){
         baseline    = ev->getBaseline();
         baselineRMS = ev->getBaselineRMS();
