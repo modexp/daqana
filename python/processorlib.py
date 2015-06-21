@@ -26,16 +26,17 @@ def parseArguments(argv):
     longRoot  = 0
     slowOn    = 0
     fastOn    = 0
+    processLevel = 0
     calFile   = 'NULL.root'
     try:
-        opts, args = getopt.getopt(argv,"hlgsi:o:c:",["long","graf","slow","fast","idir=","odir=","cal"])
+        opts, args = getopt.getopt(argv,"hlgsi:o:c:p:",["long","graf","slow","fast","idir=","odir=","cal","proc="])
     except getopt.GetoptError:
-        print('daqprocessor.py -i <inputfile> -o <outputfile> -g -s -f')
+        print('daqprocessor.py -i <inputfile> -o <outputfile> -g -l -s -f -p <level>')
         sys.exit(2)
 
     for opt, arg in opts:
         if opt == '-h':
-            print('daqprocessor.py -i <input dir> -o <output dir> -g -l -s -f')
+            print('daqprocessor.py -i <input dir> -o <output dir> -g -l -s -f -p <level>')
             sys.exit()
         elif opt in ("-i", "--idir"):
             inDir = arg
@@ -43,6 +44,8 @@ def parseArguments(argv):
             outDir = arg
         elif opt in ("-g","--graf"):
             grafOn = 1
+        elif opt in ("-p", "--proc"):
+            processLevel = int(arg)
         elif opt in ("-l","--long"):
             longRoot = 1
         elif opt in ("-s", "--slow"):
@@ -50,7 +53,7 @@ def parseArguments(argv):
         elif opt in ("-c", "--cal"):
             calFile = arg
 
-    return inDir, outDir, grafOn, longRoot, slowOn, calFile
+    return inDir, outDir, grafOn, longRoot, slowOn, calFile, processLevel
 
 
 # function to retreive a single parameter from the xml file

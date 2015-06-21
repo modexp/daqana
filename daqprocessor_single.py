@@ -13,7 +13,7 @@ from processorlib import *
 
 print('MAIN:: Welcome to the modulation daq-processor...')
 # parse the IO arguments below
-filebase, outdir, grafOn, longRoot, slowOn, calibration = parseArguments(sys.argv[1:])
+filebase, outdir, grafOn, longRoot, slowOn, calibration, dummy1 = parseArguments(sys.argv[1:])
 
 #  get the files from the data directory
 filenames, slownames = getFilenames(filebase)

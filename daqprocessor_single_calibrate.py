@@ -28,7 +28,7 @@ from processorlib import *
 
 print('MAIN:: Welcome to the modulation daq-processor...')
 # parse the IO arguments below
-filebase, dummy1, grafOn, longRoot, dummy2, dummy3 = parseArguments(sys.argv[1:])
+filebase, dummy1, grafOn, longRoot, dummy2, dummy3, processLevel = parseArguments(sys.argv[1:])
 
 # retrieve the run name
 run = filebase.split('/')[-1]
@@ -106,8 +106,8 @@ def process_fast_data(calib):
 
 
     # no calibration? just run over 10 files...
-    if (calib == 'NULL.root' and nb_files>10):
-        nb_files = 10
+# # # new calibration processes all    if (calib == 'NULL.root' and nb_files>10):
+# # # new calibration processes all        nb_files = 10
     
     if (calib == 'NULL.root'):
         outdir_tot = outdir + '/calibration/'
@@ -147,22 +147,30 @@ def process_fast_data(calib):
 #
 # MAIN python code
 #
-
+print('daqprocessor::MAIN process level = ',processLevel);
 #
 # process the slow data
 #
-process_slow_data()
+if (processLevel <= 0):
+  process_slow_data()
 
 #
-# run without calibration on a subset of the data and make energy calibration
+# run without calibration on a subset of the data to make the calibration input
 #
-process_fast_data('NULL.root')
-make_calibration(calibration)
+if (processLevel <= 1):
+  process_fast_data('NULL.root')
+
+#
+#  make energy calibration
+#
+if (processLevel <= 2):
+  make_calibration(calibration)
 
 #
 # run with calibration
 #
-process_fast_data(calibration)
+if (processLevel <= 3):
+  process_fast_data(calibration)
 
 #
 # After run analysis

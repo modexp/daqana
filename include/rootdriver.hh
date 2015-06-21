@@ -19,9 +19,12 @@ using namespace std;
 #define NUMBER_OF_CHANNELS 8
 #define MAX_PARAMETERS 3
 
+#define CALIBRATION_MODE 1
+
 class rootdriver
 {
 public:
+
     rootdriver();
     rootdriver(driver *drv, Bool_t, Bool_t);
     void FastFill(event *ev, driver *dr);
@@ -29,13 +32,17 @@ public:
     //ULong64_t SlowFill(slowevent *old_sev, ULong64_t old_stime);
     void writeParameters(driver *drv);
     void Close();
+    void readCalibration(int ilevel);
     
 private:
+    string calFile;
+
     TFile *f;
     TFile *fs;
     
     TTree *tree;
     TTree *temp_slowtree;
+    TTree *cal_tree;
     
     Int_t   	chanNum;
     Float_t 	integral;
@@ -68,11 +75,32 @@ private:
     //APC Double_t 	*slowdata;
     vector<Double_t> slowdata;
 
-    
+    //
+    //  calibration data parameters
+    // 
     Int_t 	slow_entry;
     Int_t   number_of_slow_events;
     
     Double_t calibration_constant[NUMBER_OF_CHANNELS][MAX_PARAMETERS];
+    //
+    // root tree with calibration 
+    //
+    bool foundCal;
+    TFile *_cal;
+    TTree *_cal_tree;
+    Long64_t  cal_index;
+
+    Double_t _cal_tmin;
+    Double_t _cal_tmax;
+    std::vector<Double_t> *_cal_c0;
+    std::vector<Double_t> *_cal_c1;
+    std::vector<Double_t> *_cal_c2;
+
+    TBranch *_b_cal_tmin;
+    TBranch *_b_cal_tmax;
+    TBranch *_b_cal_c0;
+    TBranch *_b_cal_c1;
+    TBranch *_b_cal_c2;
     
 };
 

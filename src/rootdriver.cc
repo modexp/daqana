@@ -9,6 +9,11 @@
 rootdriver::rootdriver(){}
 
 rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
+    //
+    // open the output root file
+    //
+    f = new TFile(drv->getRootFile().c_str(),"RECREATE");
+
     longRoot = tmpbool;
     slowOn = slow;
     
@@ -22,39 +27,70 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
     energyRatio = 0;
     
     // calibration constants
+    cout <<"rootdriver::rootdriver init calibration constants "<<endl;
     for(int ich = 0; ich < NUMBER_OF_CHANNELS; ich++) {
+  
         for (int ipar=0; ipar<MAX_PARAMETERS; ipar++){
             calibration_constant[ich][ipar] = 0.0;
         }
         calibration_constant[ich][1] = 1.0;
+        _cal_tmin = 0;
+        _cal_tmax = 999999999999999; // never get out of range anymore....
+        _cal_c0 = 0;
+        _cal_c1 = 0;
+        _cal_c2 = 0;
     }
+    cout <<"rootdriver::rootdriver done"<<endl;
     
     // read the calibration constants if you wish
-    string calFile = drv->getCalibrationFile();
+    calFile = drv->getCalibrationFile();
     if(calFile != "NULL.root"){
-        TFile *g = new TFile(calFile.c_str(),"READONLY");
-        TParameter<double>* cal;
-        char tmp[100];
-        for(int ich = 0; ich<NUMBER_OF_CHANNELS; ich++){
-            for (int ipar=0; ipar<MAX_PARAMETERS; ipar++){
+        if(CALIBRATION_MODE == 0){
+          _cal = new TFile(calFile.c_str(),"READONLY");
+
+          TParameter<double>* cal;
+          char tmp[100];
+          for(int ich = 0; ich<NUMBER_OF_CHANNELS; ich++){
+              for (int ipar=0; ipar<MAX_PARAMETERS; ipar++){
+                  
+                  sprintf(tmp,"cal_ch%02d_c%i",ich,ipar);
+                  cal = (TParameter<double>*)_cal->Get(tmp);
+                  calibration_constant[ich][ipar] = cal->GetVal();
                 
-                sprintf(tmp,"cal_ch%02d_c%i",ich,ipar);
-                cal = (TParameter<double>*)g->Get(tmp);
-                calibration_constant[ich][ipar] = cal->GetVal();
-                
-            }
-        }
-        g->Close();
-        
+              }
+          }
+          _cal->Close();
+          foundCal = kTRUE;
+       } else {
+          _b_cal_tmin = 0;
+          _b_cal_tmax = 0;
+
+          _b_cal_c0 = 0;
+          _b_cal_c1 = 0;
+          _b_cal_c2 = 0;
+          //
+          // initialize the calibration root tree
+          //
+          _cal = new TFile(calFile.c_str(),"READONLY");
+          _cal->GetObject("cal",_cal_tree);
+          _cal_tree->SetBranchAddress("cal_tmin",&_cal_tmin,&_b_cal_tmin);
+          _cal_tree->SetBranchAddress("cal_tmax",&_cal_tmax,&_b_cal_tmax);
+          _cal_tree->SetBranchAddress("c0",&_cal_c0,&_b_cal_c0);
+          _cal_tree->SetBranchAddress("c1",&_cal_c1,&_b_cal_c1);
+          _cal_tree->SetBranchAddress("c2",&_cal_c2,&_b_cal_c2);
+
+          cal_index = 0;
+          //
+          // read the first set of calibration constants
+          //
+          readCalibration(0);
+          foundCal = kFALSE;
+       }
     }
     
     // extra variables for extended root file
     baseline    = 0;
     baselineRMS = 0;
-    //
-    // open the output root file
-    //
-    f = new TFile(drv->getRootFile().c_str(),"RECREATE");
     f->cd();
     // Define tree and branches
     tree = new TTree("T", "Source data");
@@ -118,6 +154,34 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
     }
 }
 
+/*--------------------------------------------------------------------------------------*/
+void rootdriver::readCalibration(int ilevel){
+     //
+     // Read the calibration constants from the calibration ntuple
+     //
+
+     _cal->cd();
+     // get entry from the tree
+     Long64_t tentry = _cal_tree->LoadTree(cal_index);
+     _cal_tree->GetEntry(cal_index);
+
+     if(ilevel==1) cout <<"rootdriver::readCalibration  cal_index = "<<cal_index<<endl;
+     for(int ich=0; ich<NUMBER_OF_CHANNELS; ich++){
+        if(ilevel==1) cout << "      ich = "<<ich<<" "<<_cal_c0->at(ich) <<" " << _cal_c1->at(ich) << endl;
+        calibration_constant[ich][0] = _cal_c0->at(ich);
+        calibration_constant[ich][1] = _cal_c1->at(ich);
+        calibration_constant[ich][2] = _cal_c2->at(ich);
+     }
+     cout << "Read done"<<endl;
+
+    // next time we will read the next calibration.... :)
+    cal_index++;
+
+    // go back to the output root tree directory...
+    f->cd();
+
+}
+/*--------------------------------------------------------------------------------------*/
 void rootdriver::readSlowEvent(Int_t islow){
     // read one event from the slow event tree
     Long64_t nb = 0;
@@ -144,6 +208,24 @@ void rootdriver::FastFill(event *ev, driver *dr){
     //
     chanNum    = ev->getChannel() % 100;
     
+    timestamp  = ev->getTimeStamp();
+
+    //
+    // read constants until in sync with the fast data..... (should be quick)
+    //  
+    while(!foundCal) {
+      cout << timestamp << " " <<_cal_tmin<<" "<<_cal_tmax<<endl;
+      if(timestamp>=_cal_tmin && timestamp<_cal_tmax) {
+         foundCal = kTRUE;
+      } else {
+        readCalibration(0);
+      }
+    }
+    //
+    // read new set of calibration constants
+    //
+    if(timestamp > _cal_tmax) readCalibration(1);
+
     Double_t A = ev->getArea();
     integral = 0;
     // apply the calibration
@@ -151,7 +233,6 @@ void rootdriver::FastFill(event *ev, driver *dr){
         integral += calibration_constant[chanNum][ipar]*pow(A,ipar);
     }
     pkheight   = ev->getPeak();
-    timestamp  = ev->getTimeStamp();
     isTestPulse = ev->getIsTestPulse();
     errorCode   = ev->getErrorCode();
     
@@ -257,4 +338,6 @@ void rootdriver::Close(){
     
     f->Close();
     if(slowOn) fs->Close();
+
+    if(calFile != "NULL.root") _cal->Close();
 }
