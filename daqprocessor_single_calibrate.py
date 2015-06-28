@@ -15,7 +15,7 @@ modulation_basedir = "/user/z37/Modulation"
 # output_basedir to be set to directory where teh output structure should be
 output_basedir = "/data/atlas/users/acolijn/Modulation"
 #  run dir: where do you want all the scipts to live?
-run_dir = modulation_basedir + "/stoomboot"
+run_dir = modulation_basedir + "/stoomboot/scripts"
 
 import sys
 sys.path.append('python')
@@ -116,7 +116,7 @@ def process_fast_data(calib):
             cmd = 'mkdir ' + outdir_tot
             os.system(cmd)
 
-    print('MAIN:: Run daqana with energy calibration')
+    print('MAIN:: Run daqana with/without energy calibration')
     for file_id in range(0, nb_files):
         #for file_id in range(0, 10):
         print('FILE          file_id:',file_id)
@@ -126,7 +126,7 @@ def process_fast_data(calib):
         
         cmd_string = './daqana -i ' + daqfile
         if (calib != 'NULL.root'):
-          # include teh slow data
+          # include the slow data
           cmd_string = cmd_string + ' -s -l'
         else:
           # no slow data when we do the calibration
@@ -148,28 +148,26 @@ def process_fast_data(calib):
 # MAIN python code
 #
 print('daqprocessor::MAIN process level = ',processLevel);
-#
-# process the slow data
-#
-if (processLevel <= 0):
-  process_slow_data()
 
 #
 # run without calibration on a subset of the data to make the calibration input
 #
-if (processLevel <= 1):
+if (processLevel <= 0):
   process_fast_data('NULL.root')
 
 #
 #  make energy calibration
 #
-if (processLevel <= 2):
+if (processLevel <= 1):
   make_calibration(calibration)
 
 #
 # run with calibration
 #
-if (processLevel <= 3):
+if (processLevel <= 2):
+  # process the slow data first
+  process_slow_data()
+  # process the fast data
   process_fast_data(calibration)
 
 #
