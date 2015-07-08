@@ -2,7 +2,15 @@
 # -*- coding: utf-8 -*-
 
 #
-# daqprocessor_single_calibrate.py -i <input_dir> -o <output_dir>
+# daqprocessor_single_calibrate.py -i <input_dir> -l -s -p <process_level>
+#
+# Arguments
+#                -i <input_dir>     : directory with Modulation data (should have same num as run)
+#                -l                 : produce long root files 
+#                -s                 : process slow control data
+#                -p <process_level> :  0 = full reprocess of run
+#                                      1 = calibrate + reprocess + analyze
+#                                      2 = analyze only
 #
 # Process a run in 3 steps: 
 #  (1) slow data
@@ -10,9 +18,12 @@
 #  (3) run with the energy calibration found in (2) on the full dataset 
 #
 # IMPORTANT VARIABLES:
-# modulation_basedir should contain daqana and analysis packages from github
+# modulation_basedir should contain (1) daqana and (2) analysis packages from github
+#
+# A.P. Colijn - colijn@nikhef.nl
+#
 modulation_basedir = "/user/z37/Modulation"
-# output_basedir to be set to directory where teh output structure should be
+# output_basedir to be set to directory where the output structure should be
 output_basedir = "/data/atlas/users/acolijn/Modulation"
 #  run dir: where do you want all the scipts to live?
 run_dir = modulation_basedir + "/stoomboot/scripts"
@@ -43,8 +54,20 @@ if not os.path.exists(outdir):
     cmd = 'mkdir ' + outdir
     os.system(cmd)
 
+# make the output directory for the calibration files if it does not yet exist
+cal_output = output_basedir+'/calibration'
+if not os.path.exists(cal_output):
+    cmd = 'mkdir ' + cal_output
+    os.system(cmd)
+    
+# make the output directory for the analysis files if it does not yet exist
+ana_output = output_basedir+'/analysis'
+if not os.path.exists(ana_output):
+    cmd = 'mkdir ' + ana_output
+    os.system(cmd)
+
 # calibration filename
-calibration = output_basedir+'/calibration/CAL_'+run+'.root'
+calibration = cal_output+'/CAL_'+run+'.root'
 
 
 ############################################################################################
@@ -71,7 +94,7 @@ def process_slow_data():
 ############################################################################################
 
 #
-# process fast data without calibration and then make teh energy calibration
+# process fast data without calibration and then make the energy calibration
 #
 def make_calibration(calib):
     #
@@ -80,14 +103,21 @@ def make_calibration(calib):
     print('MAIN:: Make energy calibration')
     calscript = run_dir+'/do_calibrate_'+run+'.C'
     fout = open(calscript,'w')
-    fin  = open(modulation_basedir+'/analysis/calibration/do_calibrate.C.TEMPLATE', 'r')
-    for line in fin:
-        line = line.replace('DATA_DIR',outdir+'/calibration/')
-        line = line.replace('CAL_FILE',calib)
-        fout.write(line)
-    fin.close()
+    
+    #
+    # compose the calibration execution script
+    #
+    fout.write('#include "/user/z37/Modulation/analysis/calibration/ecal.C" \n');
+    fout.write('void do_calibrate_'+run+'(){ \n')
+    fout.write('  ecal e("'+outdir+'/calibration/","'+calib+'"); \n')
+    fout.write('  e.Loop(); \n')
+    fout.write('}\n')
+    
     fout.close()
     
+    #
+    # execute the calibration
+    #
     cmd_string = 'root -b -q ' + calscript
     os.system(cmd_string)
 
@@ -142,11 +172,42 @@ def process_fast_data(calib):
         cmd_string = 'rm -f ' + daqfile
         os.system(cmd_string)
 
+############################################################################################
+
+#
+# After run analysis
+#
+def do_analysis():
+
+    print('MAIN:: Make analyzer script and run it ....')
+    
+    analyzerscript = run_dir +'/do_analyzer_'+run+'.C'
+    analyzer_file = ana_output+'/ANA_'+run+'.root'
+    fout = open(analyzerscript,'w')
+    
+    #
+    # compose the analyzer execution script
+    #
+    fout.write('#include "/user/z37/Modulation/analysis/calibration/analyzer.C" \n');
+    fout.write('void do_analyzer_'+run+'(){ \n')
+    fout.write('  analyzer ana("'+outdir+'/","'+analyzer_file+'"); \n')
+    fout.write('  ana.Loop(); \n')
+    fout.write('} \n')
+    fout.close()
+
+    #
+    # execute the analysis
+    #
+    cmd_string = 'root -b -q ' + analyzerscript
+    os.system(cmd_string)
+
+
 ###############################################################################
 
 #
-# MAIN python code
+# MAIN python code (see instructions on top)
 #
+
 print('daqprocessor::MAIN process level = ',processLevel);
 
 #
@@ -164,29 +225,19 @@ if (processLevel <= 1):
 #
 # run with calibration
 #
-if (processLevel <= 2):
+if (processLevel <= 1):
   # process the slow data first
   process_slow_data()
   # process the fast data
   process_fast_data(calibration)
 
 #
-# After run analysis
+# do the post-processor analysis
 #
-print('MAIN:: Make analyzer  graphs')
-analyzerscript = run_dir +'/do_analyzer_'+run+'.C'
-analyzer_file = output_basedir+'/calibration/ANA_'+run+'.root'
-fout = open(analyzerscript,'w')
-fin  = open(modulation_basedir+'/analysis/calibration/do_analyzer.C.TEMPLATE', 'r')
-for line in fin:
-    line = line.replace('DATA_DIR',outdir+'/')
-    line = line.replace('ANA_FILE',analyzer_file)
-    print("ANA "+line)
-    fout.write(line)
-fin.close()
-fout.close()
-
-cmd_string = 'root -b -q ' + analyzerscript
-os.system(cmd_string)
+if (processLevel <= 2):
+  do_analysis()
 
 print('MAIN:: Exit from the daq-processor. bye-bye.')
+
+###############################################################################
+
