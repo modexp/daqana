@@ -5,7 +5,7 @@
 # daqprocessor_single_calibrate.py -i <input_dir> -l -s -p <process_level>
 #
 # Arguments
-#                -i <input_dir>     : directory with Modulation data (should have same num as run)
+#                -i <input_dir>     : directory with Modulation data (should have same name as run)
 #                -l                 : produce long root files 
 #                -s                 : process slow control data
 #                -p <process_level> :  0 = full reprocess of run
@@ -28,12 +28,11 @@ output_basedir = "/data/atlas/users/acolijn/Modulation"
 #  run dir: where do you want all the scipts to live?
 run_dir = modulation_basedir + "/stoomboot/scripts"
 
+############################################################################################
 import sys
 sys.path.append('python')
 from processorlib import *
-
 ############################################################################################
-
 
 # global initialization of the run processing
 
@@ -107,7 +106,7 @@ def make_calibration(calib):
     #
     # compose the calibration execution script
     #
-    fout.write('#include "/user/z37/Modulation/analysis/calibration/ecal.C" \n');
+    fout.write('#include "'+modulation_basedir+'/analysis/calibration/ecal.C" \n');
     fout.write('void do_calibrate_'+run+'(){ \n')
     fout.write('  ecal e("'+outdir+'/calibration/","'+calib+'"); \n')
     fout.write('  e.Loop(); \n')
@@ -173,13 +172,25 @@ def process_fast_data(calib):
         os.system(cmd_string)
 
 ############################################################################################
+def makelink(mc_path, mc_link):
+   # make a symbolic link to the MC template root file
+   if not os.path.exists(mc_link):
+      cmd_string = 'ln -s '+mc_path+'/'+mc_link+' .'
+      os.system(cmd_string)
+      print('makelink:: '+cmd_string)
+############################################################################################
 
 #
 # After run analysis
 #
 def do_analysis():
-
-    print('MAIN:: Make analyzer script and run it ....')
+    print('do_analyzer:: Check if symlinks to MC root files exist')
+    # simulation templates from MC
+    makelink(modulation_basedir+'/analysis/calibration','MC_ti44_modulation.root')
+    makelink(modulation_basedir+'/analysis/calibration','MC_co60_modulation.root')
+    makelink(modulation_basedir+'/analysis/calibration','MC_cs137_modulation.root')
+    
+    print('do_analyzer:: Make analyzer script and run it ....')
     
     analyzerscript = run_dir +'/do_analyzer_'+run+'.C'
     analyzer_file = ana_output+'/ANA_'+run+'.root'
@@ -188,7 +199,7 @@ def do_analysis():
     #
     # compose the analyzer execution script
     #
-    fout.write('#include "/user/z37/Modulation/analysis/calibration/analyzer.C" \n');
+    fout.write('#include "'+modulation_basedir+'/analysis/calibration/analyzer.C" \n');
     fout.write('void do_analyzer_'+run+'(){ \n')
     fout.write('  analyzer ana("'+outdir+'/","'+analyzer_file+'"); \n')
     fout.write('  ana.Loop(); \n')

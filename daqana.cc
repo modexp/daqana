@@ -73,7 +73,7 @@ int main(int argc, char **argv)
         Int_t    ich = ev->getChannel();
         Double_t rms = ev->calculateBaselineRMS();
         //if(graphics && ( (ev->getErrorCode()&0x04) != 0) ) ev->Plot(canv);
-        if(graphics && (ev->getErrorCode() == 0 && ev->getChannel()%100 == 6 && ev->getArea() > 0.4e-6) ) ev->Plot(canv);
+        if(graphics && ((ev->getErrorCode()&0x02) != 0 && ev->getChannel()%100 == 3 ) ) ev->Plot(canv);
         // free event
         myDaq.endEvent();
         

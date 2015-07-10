@@ -19,6 +19,10 @@ using namespace std;
 #define NUMBER_OF_CHANNELS 8
 #define MAX_PARAMETERS 3
 
+//
+// CALIBRATION_MODE 0  : one set of calibration constants obtained from the beginning of each run (deprecated)
+// CALIBRATION_MODE 1  : calibration constants updated every [SEC]-seconds. [SEC] defined in analysis/calibration/ecal.h
+//
 #define CALIBRATION_MODE 1
 
 class rootdriver
