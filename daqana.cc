@@ -60,7 +60,6 @@ int main(int argc, char **argv)
     cout << "daqana:: number of events = " <<totalnumberofevents << endl;
     event *ev = NULL;
     for(int iEvent=0; iEvent<totalnumberofevents; iEvent++){
-        //        for(int iEvent=0; iEvent<1000000; iEvent++){
         
         if(iEvent%100000==0) cout << "     processed "<<iEvent<<" events"<<endl;
         // read the next event
