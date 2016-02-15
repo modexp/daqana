@@ -22,14 +22,15 @@
 #
 # A.P. Colijn - colijn@nikhef.nl
 #
-modulation_basedir = "/user/z37/Modulation"
+modulation_basedir = "/Users/petman/Desktop/Modulation/"
 # output_basedir to be set to directory where the output structure should be
-output_basedir = "/data/atlas/users/acolijn/Modulation"
+#output_basedir = "/data/atlas/users/acolijn/Modulation"
+output_basedir = "/Users/petman/Desktop/Modulation/Run2/processed"
 #  run dir: where do you want all the scipts to live?
 run_dir = modulation_basedir + "/stoomboot/scripts"
 
 ############################################################################################
-import sys
+import sys,os,argparse
 sys.path.append('python')
 from processorlib import *
 ############################################################################################
@@ -38,7 +39,28 @@ from processorlib import *
 
 print('MAIN:: Welcome to the modulation daq-processor...')
 # parse the IO arguments below
-filebase, dummy1, grafOn, longRoot, dummy2, dummy3, processLevel = parseArguments(sys.argv[1:])
+parser=argparse.ArgumentParser(description="Welcome to the Modulation experiemnt data processor")
+
+parser.add_argument("inDir", help="Input directory")
+#parser.add_argument("outDir", help="Output directory")
+
+parser.add_argument("-g","--graf", help="Graph individual WFs",action="store_true")
+parser.add_argument("-l","--long", help="longRoot, whatever that means",action="store_true")
+parser.add_argument("-p","--process", type=int, help="the process level. 0 = full reprocess of run, 1 = calibrate + reprocess + analyze, 2 = analyze only")
+parser.add_argument("-s","--slow", help="Process slow control data",action="store_true")
+parser.add_argument("-f","--fast", help="Process fast data",action="store_true")
+parser.add_argument("-c","--cal", help="Use the calibration data", type=str, default='NULL.root')
+
+args=parser.parse_args()
+filebase = args.inDir
+#outdir = args.outDir
+grafOn = args.graf
+longRoot = args.long
+processLevel = args.process
+slowOn = args.slow
+fastOn = args.fast
+calibration = args.cal
+# retrieve the run name
 
 # retrieve the run name
 run = filebase.split('/')[-1]
@@ -128,7 +150,7 @@ def make_calibration(calib):
 # run with calibration
 #
 def process_fast_data(calib):
-#  get the files from the data directory
+    #  get the files from the data directory
     filenames, slownames = getFilenames(filebase)
     nb_files = len(filenames)
     outdir_tot = outdir
@@ -162,7 +184,7 @@ def process_fast_data(calib):
           cmd_string = cmd_string + ' -l'
 
         if(grafOn):
-	  cmd_string = cmd_string + ' -g'
+          cmd_string = cmd_string + ' -g'
         
         print('MAIN:: Processing ' + filename)
         os.system(cmd_string)
@@ -224,8 +246,9 @@ print('daqprocessor::MAIN process level = ',processLevel);
 #
 # run without calibration on a subset of the data to make the calibration input
 #
+
 if (processLevel <= 0):
-  process_fast_data('NULL.root')
+    process_fast_data('NULL.root')
 
 #
 #  make energy calibration

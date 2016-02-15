@@ -17,45 +17,6 @@ NUM_CHANNELS = int(8) # number of fast data channels (i.e. how many NaI detector
 # FUNCTIONS (main below....)
 #
 
-
-# interpret the command line arguments
-def parseArguments(argv):
-    inDir     = ''
-    outDir    = ''
-    grafOn    = 0
-    longRoot  = 0
-    slowOn    = 0
-    fastOn    = 0
-    processLevel = 0
-    calFile   = 'NULL.root'
-    try:
-        opts, args = getopt.getopt(argv,"hlgsi:o:c:p:",["long","graf","slow","fast","idir=","odir=","cal","proc="])
-    except getopt.GetoptError:
-        print('daqprocessor.py -i <inputfile> -o <outputfile> -g -l -s -f -p <level>')
-        sys.exit(2)
-
-    for opt, arg in opts:
-        if opt == '-h':
-            print('daqprocessor.py -i <input dir> -o <output dir> -g -l -s -f -p <level>')
-            sys.exit()
-        elif opt in ("-i", "--idir"):
-            inDir = arg
-        elif opt in ("-o", "--odir"):
-            outDir = arg
-        elif opt in ("-g","--graf"):
-            grafOn = 1
-        elif opt in ("-p", "--proc"):
-            processLevel = int(arg)
-        elif opt in ("-l","--long"):
-            longRoot = 1
-        elif opt in ("-s", "--slow"):
-            slowOn = 1
-        elif opt in ("-c", "--cal"):
-            calFile = arg
-
-    return inDir, outDir, grafOn, longRoot, slowOn, calFile, processLevel
-
-
 # function to retreive a single parameter from the xml file
 def getSingleElement(dom,eName):
     val = "-1"
@@ -111,55 +72,20 @@ def getSlowFilename(fname):
 
 # make the name of the temporary slow tree
 def getOutSlowFilename(outdir,datafile):
-    arr2 = datafile.split('.')
-    datafile = arr2[0]
-    
-    arr = datafile.split('/')
-    # get the last element
-    fb = arr[len(arr)-1]
-    
-    arr = fb.split('_')
-    fb = arr[0]
-    for i in range(1,len(arr)-1):
-        fb = fb + '_' + arr[i]
-    
-    # compose the root filename
+    fb=os.path.splitext(os.path.basename(datafile))[0][:-7] #remove file type and numbers
     tempname = outdir + '/' + fb + '.sroot'
-    #print '    Slow ROOT file = ' + tempname
     return tempname
 
 # make the name of the daq file
 def getDAQFilename(outdir,datafile):
-    
-    arr2 = datafile.split('.')
-    datafile = arr2[0]
-            
-    fb = os.path.splitext(datafile)[0]
-            
-    arr = datafile.split('/')
-    # get the last element
-    fb = arr[len(arr)-1]
-                        
-    # compose the xml name
+    fb=os.path.splitext(os.path.basename(datafile))[0]
     DAQname = outdir+'/'+fb+'.tmp'
-    #print '    DAQ file  = ' + DAQname
     return DAQname
 
 # make the output root filename
 def rootFilename(outdir,datafile):
-    
-    arr2 = datafile.split('.')
-    datafile = arr2[0]
-            
-    fb = os.path.splitext(datafile)[0]
-        
-    arr = datafile.split('/')
-    # get the last element
-    fb = arr[len(arr)-1]
-                        
-    # compose the root filename
+    fb=os.path.splitext(os.path.basename(datafile))[0]
     froot = outdir + '/' + fb + '.root'
-    #print '    ROOT file = ' + froot
     return froot
 
 
