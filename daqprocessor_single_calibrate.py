@@ -22,19 +22,21 @@
 #
 # A.P. Colijn - colijn@nikhef.nl
 #
-modulation_basedir = "/Users/petman/Desktop/Modulation/"
+#modulation_basedir = "/Users/petman/Desktop/Modulation/"
 # output_basedir to be set to directory where the output structure should be
 #output_basedir = "/data/atlas/users/acolijn/Modulation"
-output_basedir = "/Users/petman/Desktop/Modulation/Run2/processed"
+#output_basedir = "/Users/petman/Desktop/Modulation/Run2/processed"
+#output_basedir = "../data/processed/"
 #  run dir: where do you want all the scipts to live?
-run_dir = modulation_basedir + "/stoomboot/scripts"
+#script_dir = modulation_basedir + "/data/scripts"
 
 ############################################################################################
-import sys,os,argparse
+import sys,os,argparse,glob,commands
 sys.path.append('python')
 from processorlib import *
 ############################################################################################
-
+modulation_basedir=commands.getstatusoutput("pwd")[1]+"/" #looks for the current directory to determine where the analysis files are
+print modulation_basedir
 # global initialization of the run processing
 
 print('MAIN:: Welcome to the modulation daq-processor...')
@@ -45,6 +47,7 @@ parser.add_argument("inDir", help="Input directory")
 #parser.add_argument("outDir", help="Output directory")
 
 parser.add_argument("-g","--graf", help="Graph individual WFs",action="store_true")
+parser.add_argument("-d","--dir", help="Process an entire run directory",action="store_true")
 parser.add_argument("-l","--long", help="longRoot, whatever that means",action="store_true")
 parser.add_argument("-p","--process", type=int, help="the process level. 0 = full reprocess of run, 1 = calibrate + reprocess + analyze, 2 = analyze only")
 parser.add_argument("-s","--slow", help="Process slow control data",action="store_true")
@@ -52,7 +55,7 @@ parser.add_argument("-f","--fast", help="Process fast data",action="store_true")
 parser.add_argument("-c","--cal", help="Use the calibration data", type=str, default='NULL.root')
 
 args=parser.parse_args()
-filebase = args.inDir
+inDir = args.inDir
 #outdir = args.outDir
 grafOn = args.graf
 longRoot = args.long
@@ -60,35 +63,64 @@ processLevel = args.process
 slowOn = args.slow
 fastOn = args.fast
 calibration = args.cal
+directory=args.dir
 # retrieve the run name
 
+split_dir=inDir.split("raw")
+
+output_basedir=inDir.replace("raw","processed",1)
+splitoutdir=split_dir[1].split("/")
+cur_dir=split_dir[0]+"/processed"
+#check for any part of the path that does not exist, and make it.
+for dir in splitoutdir:
+    cur_dir+=dir+"/"
+    if not os.path.exists(cur_dir):
+        cmd = 'mkdir ' + cur_dir
+        os.system(cmd)
+        print "made directory" + cur_dir
+
+#output_basedir=cur_dir
+#print os.listdir(filebase)
+
 # retrieve the run name
-run = filebase.split('/')[-1]
-if (run == ""):
-    run = filebase.split('/')[len(filebase.split('/'))-2]
+runfiles=[]
+if directory:
+    filelist=glob.glob(inDir+"/*")
+else:
+    filelist=[inDir]
 
-# compose the output directory
-outdir = output_basedir + '/' + run
+for filebase in filelist:
+    run = filebase.split('/')[-1]
+    script_dir=filebase+"/scripts/"
+    print filebase
+    if (run == ""):
+        run = filebase.split('/')[len(filebase.split('/'))-2]
 
-# make the output directory if it is not there yet
-if not os.path.exists(outdir):
-    cmd = 'mkdir ' + outdir
-    os.system(cmd)
+    # compose the output directory
+    outdir = output_basedir + '/' + run
+    if not os.path.exists(script_dir):
+        cmd = 'mkdir ' + script_dir
+        os.system(cmd)
 
-# make the output directory for the calibration files if it does not yet exist
-cal_output = output_basedir+'/calibration'
-if not os.path.exists(cal_output):
-    cmd = 'mkdir ' + cal_output
-    os.system(cmd)
-    
-# make the output directory for the analysis files if it does not yet exist
-ana_output = output_basedir+'/analysis'
-if not os.path.exists(ana_output):
-    cmd = 'mkdir ' + ana_output
-    os.system(cmd)
+    # make the output directory if it is not there yet
+    if not os.path.exists(outdir):
+        cmd = 'mkdir ' + outdir
+        os.system(cmd)
 
-# calibration filename
-calibration = cal_output+'/CAL_'+run+'.root'
+    # make the output directory for the calibration files if it does not yet exist
+    cal_output = output_basedir+'/calibration'
+    if not os.path.exists(cal_output):
+        cmd = 'mkdir ' + cal_output
+        os.system(cmd)
+        
+    # make the output directory for the analysis files if it does not yet exist
+    ana_output = output_basedir+'/analysis'
+    if not os.path.exists(ana_output):
+        cmd = 'mkdir ' + ana_output
+        os.system(cmd)
+
+    # calibration filename
+    calibration = cal_output+'/CAL_'+run+'.root'
 
 
 ############################################################################################
@@ -122,7 +154,7 @@ def make_calibration(calib):
     # make the calibration
     #
     print('MAIN:: Make energy calibration')
-    calscript = run_dir+'/do_calibrate_'+run+'.C'
+    calscript = script_dir+'/do_calibrate_'+run+'.C'
     fout = open(calscript,'w')
     
     #
@@ -176,7 +208,7 @@ def process_fast_data(calib):
         daqfile = generateDriverFile(outdir_tot,filename,calib)
         
         cmd_string = './daqana -i ' + daqfile
-        if (calib != 'NULL.root'):
+        if (calib != 'NULL.root') and slowOn:
           # include the slow data
           cmd_string = cmd_string + ' -s -l'
         else:
@@ -214,7 +246,7 @@ def do_analysis():
     
     print('do_analyzer:: Make analyzer script and run it ....')
     
-    analyzerscript = run_dir +'/do_analyzer_'+run+'.C'
+    analyzerscript = script_dir +'/do_analyzer_'+run+'.C'
     analyzer_file = ana_output+'/ANA_'+run+'.root'
     fout = open(analyzerscript,'w')
     
@@ -261,7 +293,8 @@ if (processLevel <= 1):
 #
 if (processLevel <= 1):
   # process the slow data first
-  process_slow_data()
+  if slowOn:
+    process_slow_data()
   # process the fast data
   process_fast_data(calibration)
 
