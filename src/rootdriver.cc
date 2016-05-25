@@ -43,6 +43,7 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
     cout <<"rootdriver::rootdriver done"<<endl;
     
     // read the calibration constants if you wish
+<<<<<<< HEAD
     calFile = drv->getCalibrationFile();
     if(calFile != "NULL.root"){
         if(CALIBRATION_MODE == 0){
@@ -86,6 +87,23 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
           readCalibration(0);
           foundCal = kFALSE;
        }
+=======
+    string calFile = drv->getCalibrationFile();
+    
+    if(calFile != "NULL.root"){
+        TFile *g = new TFile(calFile.c_str(),"READONLY");
+        TParameter<double>* cal;
+        char tmp[100];
+        for(int ich = 0; ich<NUMBER_OF_CHANNELS; ich++){
+            cout << calFile << endl;
+            sprintf(tmp,"cal_ch%02d",ich);
+            cal = (TParameter<double>*)g->Get(tmp);
+            calibration_constant[ich] = cal->GetVal();
+        }
+        
+        g->Close();
+        
+>>>>>>> b02878bb1cce623841da419f93c406799116b788
     }
     
     // extra variables for extended root file

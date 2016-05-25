@@ -4,7 +4,7 @@
 #include <sstream>
 #include <cstdio>
 #include <cstdlib>
-
+#include <unistd.h>
 #include "driver.hh"
 #include "daq.hh"
 #include "event.hh"
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
     daq myDaq(myDriver);
     // root management
     rootdriver myRoot(myDriver, longRoot, slowOn);
-        
+    
     // loop over the events
     int totalnumberofevents = myDriver->getNEvent();
     
