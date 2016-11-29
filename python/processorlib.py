@@ -3,6 +3,7 @@
 
 from xml.dom.minidom import parse, parseString
 import os, glob, math, getopt, sys
+import time # Joran change
 
 ###############################################################################
 
@@ -132,8 +133,25 @@ def generateDriverFile(outdir,filename,calibration):
     slowfile = getSlowFilename(filename) # data file
     tempslowfile = getOutSlowFilename(outdir, filename) # root tree
     
+    #==================================================================
+    # Joran change
+    #print 'processorlib :: writing DAQ file' # Joran change
+    #def fdaqopener():
+    #   try:
+    #   fdaq = open(daqfile,'w')
+    #	  return fdaq
+    #   except IOError:
+    #	  print 'processorlib :: permission denied wait 5 seconds'
+    #      time.sleep(5)	     # Joran change
+    #      print 'waiting done'	
+    # 	  fdaqopener()
+    #fdaq = fdaqopener()
+    # Joran change
+    os.system('rm -f %s' %daqfile) ### joran changes
+    #print 'processorlib :: Done writing ' # Joran change
     fdaq = open(daqfile,'w')
-    
+    #==================================================================
+
     # get parameters from parser
     #print 'XML::read main run parameters ...'
     

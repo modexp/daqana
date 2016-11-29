@@ -12,6 +12,7 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
     //
     // open the output root file
     //
+    // cout <<"now lets go"<<endl;
     f = new TFile(drv->getRootFile().c_str(),"RECREATE");
 
     longRoot = tmpbool;
@@ -41,9 +42,10 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
         _cal_c2 = 0;
     }
     cout <<"rootdriver::rootdriver done"<<endl;
-    
+    // cout <<"now lets go"<<endl;
     // read the calibration constants if you wish
     calFile = drv->getCalibrationFile();
+    // cout <<"now lets go"<<endl;
     if(calFile != "NULL.root"){
         if(CALIBRATION_MODE == 0){
           _cal = new TFile(calFile.c_str(),"READONLY");

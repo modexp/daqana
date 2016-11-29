@@ -22,10 +22,11 @@
 #
 # A.P. Colijn - colijn@nikhef.nl
 #
-modulation_basedir = "/Users/petman/Desktop/Modulation/"
+modulation_basedir = "/user/jorana/Modulation/"
 # output_basedir to be set to directory where the output structure should be
 #output_basedir = "/data/atlas/users/acolijn/Modulation"
-output_basedir = "/Users/petman/Desktop/Modulation/Run2/processed"
+output_basedir = "/data/xenon/joranang/Modulation/processed"
+#output_basedir = "/dcache/xenon/jorana/Modulation/processed"
 #  run dir: where do you want all the scipts to live?
 run_dir = modulation_basedir + "/stoomboot/scripts"
 

@@ -90,7 +90,10 @@ event* daq::readEvent(driver* dr) {
     ichan = readADCval(i1);
     ichan -= CHANNEL_OFFSET;
     chanflag = readFlag(i1);
-    if (chanflag != 1) cout << "Warning in daq::readEvent: Start bit not in correct place" << endl;
+    if (chanflag != 1) {
+        cout << "Warning in daq::readEvent: Start bit not in correct place"<< endl;
+        cout << "i1 = "<<i1<<" ichan = "<<ichan<<" chanflag = "<<chanflag<<endl;
+        } 
     
     //ULong64_t timestamp = readTimestamp();
     Double_t timestamp = readTimestamp();
