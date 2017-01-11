@@ -18,17 +18,11 @@
 #  (3) run with the energy calibration found in (2) on the full dataset 
 #
 # IMPORTANT VARIABLES:
-# modulation_basedir should contain (1) daqana and (2) analysis packages from github
+# Environment variables must be set
+# see http://www.physics.purdue.edu/darkmatters/doku.php?id=modulation:daq:enviromentvariables
 #
 # A.P. Colijn - colijn@nikhef.nl
 #
-modulation_basedir = "/Users/petman/Desktop/Modulation/"
-# output_basedir to be set to directory where the output structure should be
-#output_basedir = "/data/atlas/users/acolijn/Modulation"
-output_basedir = "/Users/petman/Desktop/Modulation/Run2/processed"
-#  run dir: where do you want all the scipts to live?
-run_dir = modulation_basedir + "/stoomboot/scripts"
-
 ############################################################################################
 import sys,os,argparse
 sys.path.append('python')
@@ -36,8 +30,33 @@ from processorlib import *
 ############################################################################################
 
 # global initialization of the run processing
-
 print('MAIN:: Welcome to the modulation daq-processor...')
+
+#
+# get the environment variable passed as argument and if it is not set exit with an error msg
+#
+def get_env_var_ensure(env_var_name):
+    val = os.environ.get(env_var_name)
+    if val == None:
+        print("MAIN:: The environment variable %s is not set. Exiting" % env_var_name)
+        sys.exit(1)
+    return val
+
+# get required directories from the environment variables
+
+# where the analysis scripts are stored (should contain folders calibration and monitor)
+analysis_scripts_dir = get_env_var_ensure('MODEXP_ANALYSIS_DIR')
+
+# output_basedir to be set to directory where the output structure should be
+output_basedir = get_env_var_ensure('MODEXP_PROCESSED_DATA_DIR')
+
+#  run dir: where do you want all the scipts to live?
+run_dir = get_env_var_ensure('MODEXP_TEMP_SCRIPTS_DIR')
+
+# analysis output directory -- output from analyze.C goes here
+ana_output = get_env_var_ensure('MODEXP_ANALYSIS_DATA_DIR')
+############################################################################################
+
 # parse the IO arguments below
 parser=argparse.ArgumentParser(description="Welcome to the Modulation experiemnt data processor")
 
@@ -82,7 +101,6 @@ if not os.path.exists(cal_output):
     os.system(cmd)
     
 # make the output directory for the analysis files if it does not yet exist
-ana_output = output_basedir+'/analysis'
 if not os.path.exists(ana_output):
     cmd = 'mkdir ' + ana_output
     os.system(cmd)
@@ -97,8 +115,11 @@ calibration = cal_output+'/CAL_'+run+'.root'
 # process slow control data
 #
 def process_slow_data():
+    # Get all .bin and .slo files in data directory
+    filenames = getFiles(filebase, "bin")
+    slownames = getFiles(filebase, "slo")
     #  get the files from the data directory
-    filenames, slownames = getFilenames(filebase)
+    #filenames, slownames = getFilenames(filebase)
     nb_files = len(filenames)
     nb_sfiles = len(slownames)
     slownames.sort()
@@ -128,7 +149,7 @@ def make_calibration(calib):
     #
     # compose the calibration execution script
     #
-    fout.write('#include "'+modulation_basedir+'/analysis/calibration/ecal.C" \n');
+    fout.write('#include "%s/calibration/ecal.C" \n' % analysis_scripts_dir);
     fout.write('void do_calibrate_'+run+'(){ \n')
     fout.write('  ecal e("'+outdir+'/calibration/","'+calib+'"); \n')
     fout.write('  e.Loop(); \n')
@@ -150,8 +171,12 @@ def make_calibration(calib):
 # run with calibration
 #
 def process_fast_data(calib):
+
+    # Get all .bin and .slo files in data directory
+    filenames = getFiles(filebase, "bin")
+    slownames = getFiles(filebase, "slo")
     #  get the files from the data directory
-    filenames, slownames = getFilenames(filebase)
+    #filenames, slownames = getFilenames(filebase)
     nb_files = len(filenames)
     outdir_tot = outdir
 
@@ -161,7 +186,7 @@ def process_fast_data(calib):
 # # # new calibration processes all        nb_files = 10
     
     if (calib == 'NULL.root'):
-        outdir_tot = outdir + '/calibration/'
+        outdir_tot = cal_output + '/'
         # make the output directory if it is not there yet
         if not os.path.exists(outdir_tot):
             cmd = 'mkdir ' + outdir_tot
@@ -208,9 +233,9 @@ def makelink(mc_path, mc_link):
 def do_analysis():
     print('do_analyzer:: Check if symlinks to MC root files exist')
     # simulation templates from MC
-    makelink(modulation_basedir+'/analysis/calibration','MC_ti44_modulation.root')
-    makelink(modulation_basedir+'/analysis/calibration','MC_co60_modulation.root')
-    makelink(modulation_basedir+'/analysis/calibration','MC_cs137_modulation.root')
+    makelink(analysis_scripts_dir+'/calibration','MC_ti44_modulation.root')
+    makelink(analysis_scripts_dir+'/calibration','MC_co60_modulation.root')
+    makelink(analysis_scripts_dir+'/calibration','MC_cs137_modulation.root')
     
     print('do_analyzer:: Make analyzer script and run it ....')
     
@@ -221,7 +246,7 @@ def do_analysis():
     #
     # compose the analyzer execution script
     #
-    fout.write('#include "'+modulation_basedir+'/analysis/calibration/analyzer.C" \n');
+    fout.write('#include "'+analysis_scripts_dir+'/calibration/analyzer.C" \n');
     fout.write('void do_analyzer_'+run+'(){ \n')
     fout.write('  analyzer ana("'+outdir+'/","'+analyzer_file+'"); \n')
     fout.write('  ana.Loop(); \n')
