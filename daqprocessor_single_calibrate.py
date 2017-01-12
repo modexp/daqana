@@ -76,6 +76,7 @@ parser.add_argument("-p","--process", type=int, help="the process level. 0 = ful
 parser.add_argument("-s","--slow", help="Process slow control data",action="store_true")
 parser.add_argument("-f","--fast", help="Process fast data",action="store_true")
 parser.add_argument("-c","--cal", help="Use the calibration data", type=str, default='NULL.root')
+parser.add_argument("-t","--time", type=float, help="Only process data files modified in the last this number of hours")
 
 args=parser.parse_args()
 filebase = args.inDir
@@ -85,6 +86,7 @@ processLevel = args.process
 slowOn = args.slow
 fastOn = args.fast
 calibration = args.cal
+timeLimit = args.time
 
 # Make necessary directories if they don't exist yet
 ensureDir(cal_output)
@@ -126,7 +128,7 @@ def make_run_name(subdir):
 #
 def process_slow_data(basedir):
     # Get all .bin and .slo files in data directory
-    slownames = getFiles(basedir, "slo")
+    slownames = getFiles(basedir, "slo", timeLimit)
     slownames.sort()
     
     print('MAIN:: Beginning to parse slow data')
@@ -187,9 +189,8 @@ def make_calibration(indir, calib, run):
 #
 def process_fast_data(basedir, calib):
 
-    # Get all .bin and .slo files in data directory
-    filenames = getFiles(basedir, "bin")
-    slownames = getFiles(basedir, "slo")
+    # Get all .bin files in data directory
+    filenames = getFiles(basedir, "bin", timeLimit)
 
     print('MAIN:: Run daqana with/without energy calibration')
     for filename in filenames:
@@ -275,7 +276,7 @@ print('daqprocessor::MAIN process level = ',processLevel);
 #
 # Store all unique run directories (i.e. one level up from folders containing .bin)
 #
-filenames = getFiles(filebase, "bin")
+filenames = getFiles(filebase, "bin", timeLimit)
 rundirectories = set()
 for binfilename in filenames:
     rundir = get_run_directory(binfilename)
