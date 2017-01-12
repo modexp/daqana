@@ -13,6 +13,8 @@ NUM_CHANNELS = int(8) # number of fast data channels (i.e. how many NaI detector
 
 ###############################################################################
 
+# parseArguments no longer used - should be removed completely in future
+'''
 # interpret the command line arguments
 def parseArguments(argv):
     inDir     = ''
@@ -51,6 +53,7 @@ def parseArguments(argv):
             calFile = arg
 
     return inDir, outDir, grafOn, longRoot, slowOn, fastOn, calFile
+'''
 
 # function to retreive a single parameter from the xml file
 def getSingleElement(dom,eName):
