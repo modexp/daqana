@@ -22,12 +22,11 @@
 #
 # A.P. Colijn - colijn@nikhef.nl
 #
-modulation_basedir = "/Users/petman/Desktop/Modulation/"
+modulation_basedir = "/Your/base/directory"
 # output_basedir to be set to directory where the output structure should be
-#output_basedir = "/data/atlas/users/acolijn/Modulation"
-output_basedir = "/Users/petman/Desktop/Modulation/Run2/processed"
+output_basedir = "/Where/your/root/files/live"
 #  run dir: where do you want all the scipts to live?
-run_dir = modulation_basedir + "/stoomboot/scripts"
+run_dir = modulation_basedir + "/daqana_scripts"
 
 ############################################################################################
 import sys,os,argparse
