@@ -4,6 +4,7 @@
 #include <sstream>
 #include <cstdio>
 #include <cstdlib>
+#include <unistd.h>
 
 #include "driver.hh"
 #include "daq.hh"
