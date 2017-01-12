@@ -92,6 +92,35 @@ ensureDir(ana_output)
 
 ############################################################################################
 
+# Get  the run directory from the bin file location
+def get_run_directory(binfilename):
+    splitfilename = binfilename.split('/')
+    rundir = '/'.join(splitfilename[:-2])
+    return rundir
+
+# Construct subdirectory for processed data to go in from the run directory
+# If data is in suddir of standard raw data location use full subpath
+# otherwise just use the name of the folder the run is stored in
+def data_subdir(run_directory):
+    if raw_data_basedir and run_directory.startswith(raw_data_basedir):
+        subdir = run_directory[len(raw_data_basedir) + 1:]
+        subdir = '/'.join(subdir.split('/'))
+        if (subdir == ""):
+            subdir = run_directory.split('/')[-1]
+    else:
+        # Data wasn't in the default place. Just use topmost directory passed as the run name
+        subdir = run_directory.split('/')[-1]
+        if (subdir == ""):
+            subdir = run_directory.split('/')[-2]
+    return subdir
+
+# Make run name form the sub directory
+def make_run_name(subdir):
+    return '_'.join(subdir.split('/'))
+
+
+############################################################################################
+
 #
 # process slow control data
 #
