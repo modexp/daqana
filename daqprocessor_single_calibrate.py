@@ -8,6 +8,7 @@
 #                -i <input_dir>     : directory with Modulation data (should have same name as run)
 #                -l                 : produce long root files 
 #                -s                 : process slow control data
+#                -f                 : process fast data
 #                -p <process_level> :  0 = full reprocess of run
 #                                      1 = calibrate + reprocess + analyze
 #                                      2 = analyze only
@@ -76,15 +77,18 @@ parser.add_argument("-p","--process", type=int, help="the process level. 0 = ful
 parser.add_argument("-s","--slow", help="Process slow control data",action="store_true")
 parser.add_argument("-f","--fast", help="Process fast data",action="store_true")
 parser.add_argument("-c","--cal", help="Use the calibration data", type=str, default='NULL.root')
+parser.add_argument("-t","--time", type=float, help="Only process data files modified in the last this number of hours")
 
 args=parser.parse_args()
 filebase = args.inDir
 grafOn = args.graf
 longRoot = args.long
 processLevel = args.process
-slowOn = args.slow
-fastOn = args.fast
+bothOn = (args.slow == args.fast)
+slowOn = bothOn or args.slow
+fastOn = bothOn or args.fast
 calibration = args.cal
+timeLimit = args.time # None if no time limit (default from argparse)
 
 # Make necessary directories if they don't exist yet
 ensureDir(cal_output)
@@ -126,7 +130,7 @@ def make_run_name(subdir):
 #
 def process_slow_data(basedir):
     # Get all .bin and .slo files in data directory
-    slownames = getFiles(basedir, "slo")
+    slownames = getFiles(basedir, "slo", timeLimit)
     slownames.sort()
     
     print('MAIN:: Beginning to parse slow data')
@@ -186,10 +190,8 @@ def make_calibration(indir, calib, run):
 # calib is location of ecal.C output or 'NULL.root' to process without calibration
 #
 def process_fast_data(basedir, calib):
-
-    # Get all .bin and .slo files in data directory
-    filenames = getFiles(basedir, "bin")
-    slownames = getFiles(basedir, "slo")
+    # Get all .bin files in data directory
+    filenames = getFiles(basedir, "bin", timeLimit)
 
     print('MAIN:: Run daqana with/without energy calibration')
     for filename in filenames:
@@ -270,53 +272,62 @@ def do_analysis(indir, analyzer_file):
 # MAIN python code (see instructions on top)
 #
 
-print('daqprocessor::MAIN process level = ',processLevel);
-
-#
-# Store all unique run directories (i.e. one level up from folders containing .bin)
-#
-filenames = getFiles(filebase, "bin")
-rundirectories = set()
-for binfilename in filenames:
-    rundir = get_run_directory(binfilename)
-    rundirectories.add(rundir)
-
-#
-# run without calibration on a subset of the data to make the calibration input
-#
-
-if (processLevel <= 0):
-    process_fast_data(filebase, 'NULL.root')
-
-#
-#  run with calibration
-#
-if (processLevel <= 1):
-    for rundir in rundirectories:
-        subdir = data_subdir(rundir)
-        indir = os.path.join(output_basedir, subdir, 'calibration')
-        runname = make_run_name(subdir)
-        calibration = cal_output+'/CAL_'+runname+'.root'
-
-        # Do the calibration
-        make_calibration(indir, calibration, runname)
-
-        # Process slow and then fast data
-        process_slow_data(rundir)
-        process_fast_data(rundir, calibration)
+if fastOn:
+    print('daqprocessor::MAIN process level = ',processLevel);
+    
+    #
+    # Store all unique run directories (i.e. one level up from folders containing .bin)
+    #
+    filenames = getFiles(filebase, "bin", timeLimit)
+    rundirectories = set()
+    for binfilename in filenames:
+        rundir = get_run_directory(binfilename)
+        rundirectories.add(rundir)
         
+    #
+    # run without calibration on a subset of the data to make the calibration input
+    #
+    
+    if (processLevel <= 0):
+        process_fast_data(filebase, 'NULL.root')
+        
+    #
+    #  run with calibration
+    #
+    if (processLevel <= 1):
+        for rundir in rundirectories:
+            subdir = data_subdir(rundir)
+            indir = os.path.join(output_basedir, subdir, 'calibration')
+            runname = make_run_name(subdir)
+            calibration = cal_output+'/CAL_'+runname+'.root'
+            
+            # Do the calibration
+            make_calibration(indir, calibration, runname)
+            
+            # Process slow and then fast data
+            if slowOn: process_slow_data(filebase)
+            process_fast_data(filebase, calibration)
+            
+
+    #
+    # do the post-processor analysis
+    #
+    if (processLevel <= 2):
+        for rundir in rundirectories:
+            subdir = data_subdir(rundir)
+            indir = os.path.join(output_basedir, subdir)
+            runname = make_run_name(subdir)
+            analyzer_file = ana_output + '/ANA_' + runname + '.root'
+            do_analysis(indir, analyzer_file)
 
 #
-# do the post-processor analysis
+# Only if fast was not on do we need to now process the slow data
+# if both were on it was done above
 #
-if (processLevel <= 2):
-    for rundir in rundirectories:
-        subdir = data_subdir(rundir)
-        indir = os.path.join(output_basedir, subdir)
-        runname = make_run_name(subdir)
-        analyzer_file = ana_output + '/ANA_' + runname + '.root'
-        do_analysis(indir, analyzer_file)
-        
+elif slowOn:
+    print('daqprocessor::MAIN process slow only')
+    process_slow_data(filebase)
+
 print('MAIN:: Exit from the daq-processor. bye-bye.')
 
 ###############################################################################
