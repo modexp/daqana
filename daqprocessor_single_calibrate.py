@@ -190,7 +190,6 @@ def make_calibration(indir, calib, run):
 # calib is location of ecal.C output or 'NULL.root' to process without calibration
 #
 def process_fast_data(basedir, calib):
-
     # Get all .bin files in data directory
     filenames = getFiles(basedir, "bin", timeLimit)
 
