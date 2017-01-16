@@ -18,17 +18,11 @@
 #  (3) run with the energy calibration found in (2) on the full dataset 
 #
 # IMPORTANT VARIABLES:
-# modulation_basedir should contain (1) daqana and (2) analysis packages from github
+# Environment variables must be set
+# see http://www.physics.purdue.edu/darkmatters/doku.php?id=modulation:daq:enviromentvariables
 #
 # A.P. Colijn - colijn@nikhef.nl
 #
-modulation_basedir = "/Users/petman/Desktop/Modulation/"
-# output_basedir to be set to directory where the output structure should be
-#output_basedir = "/data/atlas/users/acolijn/Modulation"
-output_basedir = "/Users/petman/Desktop/Modulation/Run2/processed"
-#  run dir: where do you want all the scipts to live?
-run_dir = modulation_basedir + "/stoomboot/scripts"
-
 ############################################################################################
 import sys,os,argparse
 sys.path.append('python')
@@ -36,8 +30,40 @@ from processorlib import *
 ############################################################################################
 
 # global initialization of the run processing
-
 print('MAIN:: Welcome to the modulation daq-processor...')
+
+#
+# get the environment variable passed as argument and if it is not set exit with an error msg
+#
+def get_env_var_ensure(env_var_name):
+    val = os.environ.get(env_var_name)
+    if val == None:
+        print("MAIN:: The environment variable %s is not set. Exiting" % env_var_name)
+        sys.exit(1)
+    return val
+
+# get required directories from the environment variables
+
+# the root raw data directory (used to determine the run name)
+# Code will not fail without but will get messy if there are nested directories in the input directory
+raw_data_basedir = os.environ.get('MODEXP_RAW_DATA_DIR')
+
+# where the analysis scripts are stored (should contain folders calibration and monitor)
+analysis_scripts_dir = get_env_var_ensure('MODEXP_ANALYSIS_DIR')
+
+# output_basedir to be set to directory where the output structure should be
+output_basedir = get_env_var_ensure('MODEXP_PROCESSED_DATA_DIR')
+
+#  run dir: where do you want all the scipts to live?
+run_dir = get_env_var_ensure('MODEXP_TEMP_SCRIPTS_DIR')
+
+# where to put calibration files (including unprocessed data root files)
+cal_output = get_env_var_ensure('MODEXP_CALIBRATION_DATA_DIR')
+
+# analysis output directory -- output from analyze.C goes here
+ana_output = get_env_var_ensure('MODEXP_ANALYSIS_DATA_DIR')
+############################################################################################
+
 # parse the IO arguments below
 parser=argparse.ArgumentParser(description="Welcome to the Modulation experiemnt data processor")
 
@@ -53,42 +79,44 @@ parser.add_argument("-c","--cal", help="Use the calibration data", type=str, def
 
 args=parser.parse_args()
 filebase = args.inDir
-#outdir = args.outDir
 grafOn = args.graf
 longRoot = args.long
 processLevel = args.process
 slowOn = args.slow
 fastOn = args.fast
 calibration = args.cal
-# retrieve the run name
 
-# retrieve the run name
-run = filebase.split('/')[-1]
-if (run == ""):
-    run = filebase.split('/')[len(filebase.split('/'))-2]
+# Make necessary directories if they don't exist yet
+ensureDir(cal_output)
+ensureDir(ana_output)
 
-# compose the output directory
-outdir = output_basedir + '/' + run
+############################################################################################
 
-# make the output directory if it is not there yet
-if not os.path.exists(outdir):
-    cmd = 'mkdir ' + outdir
-    os.system(cmd)
+# Get  the run directory from the bin file location
+def get_run_directory(binfilename):
+    splitfilename = binfilename.split('/')
+    rundir = '/'.join(splitfilename[:-2])
+    return rundir
 
-# make the output directory for the calibration files if it does not yet exist
-cal_output = output_basedir+'/calibration'
-if not os.path.exists(cal_output):
-    cmd = 'mkdir ' + cal_output
-    os.system(cmd)
-    
-# make the output directory for the analysis files if it does not yet exist
-ana_output = output_basedir+'/analysis'
-if not os.path.exists(ana_output):
-    cmd = 'mkdir ' + ana_output
-    os.system(cmd)
+# Construct subdirectory for processed data to go in from the run directory
+# If data is in suddir of standard raw data location use full subpath
+# otherwise just use the name of the folder the run is stored in
+def data_subdir(run_directory):
+    if raw_data_basedir and run_directory.startswith(raw_data_basedir):
+        subdir = run_directory[len(raw_data_basedir) + 1:]
+        subdir = '/'.join(subdir.split('/'))
+        if (subdir == ""):
+            subdir = run_directory.split('/')[-1]
+    else:
+        # Data wasn't in the default place. Just use topmost directory passed as the run name
+        subdir = run_directory.split('/')[-1]
+        if (subdir == ""):
+            subdir = run_directory.split('/')[-2]
+    return subdir
 
-# calibration filename
-calibration = cal_output+'/CAL_'+run+'.root'
+# Make run name form the sub directory
+def make_run_name(subdir):
+    return '_'.join(subdir.split('/'))
 
 
 ############################################################################################
@@ -96,16 +124,23 @@ calibration = cal_output+'/CAL_'+run+'.root'
 #
 # process slow control data
 #
-def process_slow_data():
-    #  get the files from the data directory
-    filenames, slownames = getFilenames(filebase)
-    nb_files = len(filenames)
-    nb_sfiles = len(slownames)
+def process_slow_data(basedir):
+    # Get all .bin and .slo files in data directory
+    slownames = getFiles(basedir, "slo")
     slownames.sort()
     
     print('MAIN:: Beginning to parse slow data')
-    for i in range(nb_sfiles):
-        daqfile = generateDriverFile(outdir,slownames[i], 'NULL.root')
+    for filename in slownames:
+        # Generate the output directory and make sure it exists
+        rundir = get_run_directory(filename)
+        subdir = data_subdir(rundir)
+        outdir_tot = os.path.join(output_basedir, subdir)
+        ensureDir(outdir_tot)
+
+        # generate driver file
+        daqfile = generateDriverFile(outdir_tot, filename, 'NULL.root')
+
+        # generate and run command
         slow_cmd_string = './slowdaq -i ' + daqfile
         os.system(slow_cmd_string)
         cmd_string = 'rm -f ' + daqfile
@@ -117,7 +152,7 @@ def process_slow_data():
 #
 # process fast data without calibration and then make the energy calibration
 #
-def make_calibration(calib):
+def make_calibration(indir, calib, run):
     #
     # make the calibration
     #
@@ -128,9 +163,9 @@ def make_calibration(calib):
     #
     # compose the calibration execution script
     #
-    fout.write('#include "'+modulation_basedir+'/analysis/calibration/ecal.C" \n');
+    fout.write('#include "%s/calibration/ecal.C" \n' % analysis_scripts_dir);
     fout.write('void do_calibrate_'+run+'(){ \n')
-    fout.write('  ecal e("'+outdir+'/calibration/","'+calib+'"); \n')
+    fout.write('  ecal e("'+indir+'/","'+calib+'"); \n')
     fout.write('  e.Loop(); \n')
     fout.write('}\n')
     
@@ -147,32 +182,27 @@ def make_calibration(calib):
 ############################################################################################
 
 #
-# run with calibration
+# Process all fast data in a subdirectory of basedir, with or without calibration
+# calib is location of ecal.C output or 'NULL.root' to process without calibration
 #
-def process_fast_data(calib):
-    #  get the files from the data directory
-    filenames, slownames = getFilenames(filebase)
-    nb_files = len(filenames)
-    outdir_tot = outdir
+def process_fast_data(basedir, calib):
 
-
-    # no calibration? just run over 10 files...
-# # # new calibration processes all    if (calib == 'NULL.root' and nb_files>10):
-# # # new calibration processes all        nb_files = 10
-    
-    if (calib == 'NULL.root'):
-        outdir_tot = outdir + '/calibration/'
-        # make the output directory if it is not there yet
-        if not os.path.exists(outdir_tot):
-            cmd = 'mkdir ' + outdir_tot
-            os.system(cmd)
+    # Get all .bin and .slo files in data directory
+    filenames = getFiles(basedir, "bin")
+    slownames = getFiles(basedir, "slo")
 
     print('MAIN:: Run daqana with/without energy calibration')
-    for file_id in range(0, nb_files):
-        #for file_id in range(0, 10):
-        print('FILE          file_id:',file_id)
+    for filename in filenames:
+        # Generate the output directory and make sure it exists
+        rundir = get_run_directory(filename)
+        subdir = data_subdir(rundir)
+        outdir_tot = os.path.join(output_basedir, subdir)
+        if calib == 'NULL.root':
+            outdir_tot = os.path.join(outdir_tot, 'calibration')
+        ensureDir(outdir_tot)
+        
+        print('FILE:', filename)
         # generate driver file
-        filename = filenames[file_id]
         daqfile = generateDriverFile(outdir_tot,filename,calib)
         
         cmd_string = './daqana -i ' + daqfile
@@ -205,25 +235,24 @@ def makelink(mc_path, mc_link):
 #
 # After run analysis
 #
-def do_analysis():
+def do_analysis(indir, analyzer_file):
     print('do_analyzer:: Check if symlinks to MC root files exist')
     # simulation templates from MC
-    makelink(modulation_basedir+'/analysis/calibration','MC_ti44_modulation.root')
-    makelink(modulation_basedir+'/analysis/calibration','MC_co60_modulation.root')
-    makelink(modulation_basedir+'/analysis/calibration','MC_cs137_modulation.root')
+    makelink(analysis_scripts_dir+'/calibration','MC_ti44_modulation.root')
+    makelink(analysis_scripts_dir+'/calibration','MC_co60_modulation.root')
+    makelink(analysis_scripts_dir+'/calibration','MC_cs137_modulation.root')
     
     print('do_analyzer:: Make analyzer script and run it ....')
     
-    analyzerscript = run_dir +'/do_analyzer_'+run+'.C'
-    analyzer_file = ana_output+'/ANA_'+run+'.root'
+    analyzerscript = run_dir +'/do_analyzer_'+runname+'.C'
     fout = open(analyzerscript,'w')
     
     #
     # compose the analyzer execution script
     #
-    fout.write('#include "'+modulation_basedir+'/analysis/calibration/analyzer.C" \n');
-    fout.write('void do_analyzer_'+run+'(){ \n')
-    fout.write('  analyzer ana("'+outdir+'/","'+analyzer_file+'"); \n')
+    fout.write('#include "'+analysis_scripts_dir+'/calibration/analyzer.C" \n');
+    fout.write('void do_analyzer_'+runname+'(){ \n')
+    fout.write('  analyzer ana("'+indir+'/","'+analyzer_file+'"); \n')
     fout.write('  ana.Loop(); \n')
     fout.write('} \n')
     fout.close()
@@ -244,34 +273,50 @@ def do_analysis():
 print('daqprocessor::MAIN process level = ',processLevel);
 
 #
+# Store all unique run directories (i.e. one level up from folders containing .bin)
+#
+filenames = getFiles(filebase, "bin")
+rundirectories = set()
+for binfilename in filenames:
+    rundir = get_run_directory(binfilename)
+    rundirectories.add(rundir)
+
+#
 # run without calibration on a subset of the data to make the calibration input
 #
 
 if (processLevel <= 0):
-    process_fast_data('NULL.root')
+    process_fast_data(filebase, 'NULL.root')
 
 #
-#  make energy calibration
+#  run with calibration
 #
 if (processLevel <= 1):
-  make_calibration(calibration)
+    for rundir in rundirectories:
+        subdir = data_subdir(rundir)
+        indir = os.path.join(output_basedir, subdir, 'calibration')
+        runname = make_run_name(subdir)
+        calibration = cal_output+'/CAL_'+runname+'.root'
 
-#
-# run with calibration
-#
-if (processLevel <= 1):
-  # process the slow data first
-  process_slow_data()
-  # process the fast data
-  process_fast_data(calibration)
+        # Do the calibration
+        make_calibration(indir, calibration, runname)
+
+        # Process slow and then fast data
+        process_slow_data(rundir)
+        process_fast_data(rundir, calibration)
+        
 
 #
 # do the post-processor analysis
 #
 if (processLevel <= 2):
-  do_analysis()
-
+    for rundir in rundirectories:
+        subdir = data_subdir(rundir)
+        indir = os.path.join(output_basedir, subdir)
+        runname = make_run_name(subdir)
+        analyzer_file = ana_output + '/ANA_' + runname + '.root'
+        do_analysis(indir, analyzer_file)
+        
 print('MAIN:: Exit from the daq-processor. bye-bye.')
 
 ###############################################################################
-
