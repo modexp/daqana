@@ -12,7 +12,6 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
     //
     // open the output root file
     //
-    // cout <<"now lets go"<<endl;
     f = new TFile(drv->getRootFile().c_str(),"RECREATE");
 
     longRoot = tmpbool;
@@ -42,10 +41,9 @@ rootdriver::rootdriver(driver *drv, Bool_t tmpbool, Bool_t slow){
         _cal_c2 = 0;
     }
     cout <<"rootdriver::rootdriver done"<<endl;
-    // cout <<"now lets go"<<endl;
+    
     // read the calibration constants if you wish
     calFile = drv->getCalibrationFile();
-    // cout <<"now lets go"<<endl;
     if(calFile != "NULL.root"){
         if(CALIBRATION_MODE == 0){
           _cal = new TFile(calFile.c_str(),"READONLY");
@@ -215,12 +213,18 @@ void rootdriver::FastFill(event *ev, driver *dr){
     //
     // read constants until in sync with the fast data..... (should be quick)
     //  
+    int loopcounter = 0;
     while(!foundCal) {
+      loopcounter += 1;
       cout << timestamp << " " <<_cal_tmin<<" "<<_cal_tmax<<endl;
       if(timestamp>=_cal_tmin && timestamp<_cal_tmax) {
          foundCal = kTRUE;
       } else {
         readCalibration(0);
+      }
+      if (loopcounter == 1000){
+        cout << "rootdriver::FastFill NOT FOUND TERMINIATE"<<endl;
+        exit(-1);
       }
     }
     //

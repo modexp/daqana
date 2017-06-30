@@ -3,7 +3,7 @@
 
 from xml.dom.minidom import parse, parseString
 import os, glob, math, getopt, sys
-import time # Joran change
+from datetime import datetime, timedelta
 
 ###############################################################################
 
@@ -14,9 +14,47 @@ NUM_CHANNELS = int(8) # number of fast data channels (i.e. how many NaI detector
 
 ###############################################################################
 
-#
-# FUNCTIONS (main below....)
-#
+# parseArguments no longer used - should be removed completely in future
+'''
+# interpret the command line arguments
+def parseArguments(argv):
+    inDir     = ''
+    outDir    = ''
+    grafOn    = 0
+    longRoot  = 0
+    slowOn    = 0
+    fastOn    = 0
+    processLevel = 0
+    calFile   = 'NULL.root'
+    try:
+        opts, args = getopt.getopt(argv,"hlgsfi:o:c:p:",["long","graf","slow","fast","idir=","odir=","cal","proc="])
+    except getopt.GetoptError:
+        print('daqprocessor.py -i <inputfile> -o <outputfile> -g -l -s -f -p <level>')
+        sys.exit(2)
+
+    for opt, arg in opts:
+        if opt == '-h':
+            print('daqprocessor.py -i <input dir> -o <output dir> -g -l -s -f -p <level>')
+            sys.exit()
+        elif opt in ("-i", "--idir"):
+            inDir = arg
+        elif opt in ("-o", "--odir"):
+            outDir = arg
+        elif opt in ("-g","--graf"):
+            grafOn = 1
+        elif opt in ("-p", "--proc"):
+            processLevel = int(arg)
+        elif opt in ("-l","--long"):
+            longRoot = 1
+        elif opt in ("-s", "--slow"):
+            slowOn = 1
+        elif opt in ("-f", "--fast"):
+            fastOn = 1
+        elif opt in ("-c", "--cal"):
+            calFile = arg
+
+    return inDir, outDir, grafOn, longRoot, slowOn, fastOn, calFile
+'''
 
 # function to retreive a single parameter from the xml file
 def getSingleElement(dom,eName):
@@ -29,6 +67,29 @@ def getSingleElement(dom,eName):
                 val= "-1"
 
     return val
+
+# Tests if a timestamp is with the useful range
+def isRecent(timestamp, timeLimit):
+    diff = datetime.now() - datetime.fromtimestamp(timestamp)
+    return diff < timedelta(hours = timeLimit)
+
+# See if directory exists and make it if not
+def ensureDir(d):
+    if not os.path.exists(d):
+        os.makedirs(d)
+
+# Find recent files with particular extension
+def getFiles(parentDir, fileExtension, timeLimit=None):
+    retFileList = []
+    for (dir, _, fileList) in os.walk(parentDir):
+        for file in fileList:
+            _, extension = os.path.splitext(file)
+            fullPath = dir + '/' + file
+            if extension == '.' + fileExtension:
+                if timeLimit == None or isRecent(os.path.getmtime(fullPath), timeLimit):
+                    retFileList.append(fullPath)
+    return retFileList
+
 
 # retrieve the names of all binary files in a directory
 def getFilenames(fbase):
@@ -133,25 +194,9 @@ def generateDriverFile(outdir,filename,calibration):
     slowfile = getSlowFilename(filename) # data file
     tempslowfile = getOutSlowFilename(outdir, filename) # root tree
     
-    #==================================================================
-    # Joran change
-    #print 'processorlib :: writing DAQ file' # Joran change
-    #def fdaqopener():
-    #   try:
-    #   fdaq = open(daqfile,'w')
-    #	  return fdaq
-    #   except IOError:
-    #	  print 'processorlib :: permission denied wait 5 seconds'
-    #      time.sleep(5)	     # Joran change
-    #      print 'waiting done'	
-    # 	  fdaqopener()
-    #fdaq = fdaqopener()
-    # Joran change
-    os.system('rm -f %s' %daqfile) ### joran changes
-    #print 'processorlib :: Done writing ' # Joran change
+    os.system('rm -f %s' %daqfile) ### Joran changes
     fdaq = open(daqfile,'w')
-    #==================================================================
-
+    
     # get parameters from parser
     #print 'XML::read main run parameters ...'
     

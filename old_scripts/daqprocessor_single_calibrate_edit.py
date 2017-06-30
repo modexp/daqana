@@ -24,6 +24,27 @@
 #
 # A.P. Colijn - colijn@nikhef.nl
 #
+
+
+MODEXP_BASE_DIR="/user/jorana/Modulation"
+MODEXP_RAW_DATA_DIR="/data/modulation/Raw_Data/combined"
+MODEXP_PROCESSED_DATA_DIR="/dcache/xenon/jorana/Modulation/processed"
+ 
+# These environment variables may need changing but have sensible defaults
+########################################################
+ 
+# Location of analysis scripts from GitHub:
+MODEXP_ANALYSIS_DIR=MODEXP_BASE_DIR + "/analysis"
+ 
+# Somewhere to put shell scripts used to call root scripts by daq processor
+MODEXP_TEMP_SCRIPTS_DIR=MODEXP_BASE_DIR + "/stoomboot/scripts"
+ 
+# Location of calibration data.
+MODEXP_CALIBRATION_DATA_DIR=MODEXP_PROCESSED_DATA_DIR + "/calibration"
+ 
+# Analysis data directory.
+MODEXP_ANALYSIS_DATA_DIR=MODEXP_PROCESSED_DATA_DIR +"/analysis"
+
 ############################################################################################
 import sys,os,argparse
 sys.path.append('python')
@@ -47,26 +68,26 @@ def get_env_var_ensure(env_var_name):
 
 # the root raw data directory (used to determine the run name)
 # Code will not fail without but will get messy if there are nested directories in the input directory
-raw_data_basedir = os.environ.get('MODEXP_RAW_DATA_DIR')
+raw_data_basedir = MODEXP_RAW_DATA_DIR
 
 # where the analysis scripts are stored (should contain folders calibration and monitor)
-analysis_scripts_dir = get_env_var_ensure('MODEXP_ANALYSIS_DIR')
+analysis_scripts_dir = MODEXP_ANALYSIS_DIR
 
 # output_basedir to be set to directory where the output structure should be
-output_basedir = get_env_var_ensure('MODEXP_PROCESSED_DATA_DIR')
+output_basedir = MODEXP_PROCESSED_DATA_DIR
 
 #  run dir: where do you want all the scipts to live?
-run_dir = get_env_var_ensure('MODEXP_TEMP_SCRIPTS_DIR')
+run_dir = MODEXP_TEMP_SCRIPTS_DIR
 
 # where to put calibration files (including unprocessed data root files)
-cal_output = get_env_var_ensure('MODEXP_CALIBRATION_DATA_DIR')
+cal_output = MODEXP_CALIBRATION_DATA_DIR
 
 # analysis output directory -- output from analyze.C goes here
-ana_output = get_env_var_ensure('MODEXP_ANALYSIS_DATA_DIR')
+ana_output = MODEXP_ANALYSIS_DATA_DIR
 ############################################################################################
 
 # parse the IO arguments below
-parser=argparse.ArgumentParser(description="Welcome to the Modulation experiemnt data processor")
+parser=argparse.ArgumentParser(description="Welcome to the Modulation experiment data processor")
 
 parser.add_argument("inDir", help="Input directory")
 #parser.add_argument("outDir", help="Output directory")

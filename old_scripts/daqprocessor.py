@@ -16,7 +16,7 @@ MAX_NB_PROCESSES = int(4) # 4 processors running on each of the 4 cores
 print('MAIN:: Welcome to the modulation daq-processor...')
 # parse the IO arguments below
 filebase, outdir, grafOn, longRoot, slowOn, fastOn, calibration = parseArguments(sys.argv[1:])
-
+print(slowOn, fastOn)
 #  get the files from the data directory
 filenames, slownames = getFilenames(filebase)
 nb_files = len(filenames)
@@ -42,7 +42,7 @@ if fastOn:
   for file_id in range(0, nb_files):
     split_file_ids[file_id % MAX_NB_PROCESSES].append(file_id)
 
-  # run on all the binary files in the input directory
+# run on all the binary files in the input directory
   for process_nb in range(MAX_NB_PROCESSES):
       # fork into desired number of processes
       print 'I am at process # ', process_nb
@@ -73,7 +73,7 @@ if fastOn:
 	      if((not fastOn) and (not slowOn)):
               	print 'MAIN:: User did not specify which data to parse, only filling fast data'
 		#cmd_string = cmd_string + ' -s'
-        
+
 	      cmds_to_ex.append(cmd_string)
 	      print 'MAIN:: Processing ' + filename
 	      os.system(cmd_string)
