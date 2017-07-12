@@ -334,10 +334,18 @@ void rootdriver::writeParameters(driver *drv){
 }
 
 void rootdriver::Close(){
-    tree->Write();
-    
+    f->cd();
+    tree->Write(0, TObject::kWriteDelete, 0); // overwrite the last auto save
     f->Close();
-    if(slowOn) fs->Close();
+    
+    if(slowOn) {
+        temp_slowtree = NULL;
+        fs->Close();
+    }
 
-    if(calFile != "NULL.root") _cal->Close();
+    if(calFile != "NULL.root") {
+        _cal_tree = NULL;
+        _cal->Close();
+    }
+
 }

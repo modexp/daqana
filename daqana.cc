@@ -77,8 +77,10 @@ int main(int argc, char **argv)
         // free event
         myDaq.endEvent();
         
-        ev = NULL;
+    
     }
+    
+    ev = NULL;
     
     cout <<"daqana:: Finished processing .... terminating daqana" <<endl;
     if(graphics) delete theApp;
