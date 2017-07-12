@@ -76,18 +76,18 @@ int main(int argc, char **argv)
         if(graphics && ((ev->getErrorCode()&0x02) != 0 && ev->getChannel()%100 == 3 ) ) ev->Plot(canv);
         // free event
         myDaq.endEvent();
-        
+        ev = NULL;
     
     }
     
-    ev = NULL;
+    
     
     cout <<"daqana:: Finished processing .... terminating daqana" <<endl;
     if(graphics) delete theApp;
     // write run parameters to file
     myRoot.writeParameters(myDriver);
     myRoot.Close();
-    delete myDriver;
+    //delete myDriver;
     cout <<"daqana:: Finished processing .... done" <<endl;
     return 0;
 }

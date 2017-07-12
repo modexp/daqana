@@ -99,7 +99,7 @@ ensureDir(ana_output)
 # Get  the run directory from the bin file location
 def get_run_directory(binfilename):
     splitfilename = binfilename.split('/')
-    rundir = '/'.join(splitfilename[:-2])
+    rundir = '/'.join(splitfilename[:-1])
     return rundir
 
 # Construct subdirectory for processed data to go in from the run directory
