@@ -25,10 +25,12 @@
 # A.P. Colijn - colijn@nikhef.nl
 #
 ############################################################################################
-import sys,os,argparse
+import sys, os, argparse, subprocess, time
 sys.path.append('python')
 from processorlib import *
 ############################################################################################
+
+max_num_jobs = 200
 
 # global initialization of the run processing
 print('MAIN:: Welcome to the modulation daq-processor...')
@@ -76,18 +78,22 @@ parser.add_argument("-l","--long", help="longRoot, whatever that means",action="
 parser.add_argument("-p","--process", type=int, help="the process level. 0 = full reprocess of run, 1 = calibrate + reprocess + analyze, 2 = analyze only")
 parser.add_argument("-s","--slow", help="Process slow control data",action="store_true")
 parser.add_argument("-f","--fast", help="Process fast data",action="store_true")
-parser.add_argument("-c","--cal", help="Use the calibration data", type=str, default='NULL.root')
+parser.add_argument("-c","--cal", help="Use the calibration data (and process and analyse)", type=str, default='NULL.root')
 parser.add_argument("-t","--time", type=float, help="Only process data files modified in the last this number of hours")
+parser.add_argument("-b","--batch", help="Submit fast processing jobs to the SLURM batch queue", action='store_true')
+parser.add_argument("-B","--batch_all", help="Submit fast and slow processing jobs to the SLURM batch queue", action='store_true')
 
 args=parser.parse_args()
 filebase = args.inDir
 grafOn = args.graf
 longRoot = args.long
-processLevel = args.process
 bothOn = (args.slow == args.fast)
 slowOn = bothOn or args.slow
 fastOn = bothOn or args.fast
+batch_fast = args.batch or args.batch_all
+batch_slow = args.batch_all
 calibration = args.cal
+processLevel = max(args.process, 1 if calibration != 'NULL.root' else 0)
 timeLimit = args.time # None if no time limit (default from argparse)
 
 # Make necessary directories if they don't exist yet
@@ -128,27 +134,44 @@ def make_run_name(subdir):
 #
 # process slow control data
 #
-def process_slow_data(basedir):
+def process_slow_data(basedir, batch):
     # Get all .bin and .slo files in data directory
     slownames = getFiles(basedir, "slo", timeLimit)
     slownames.sort()
     
     print('MAIN:: Beginning to parse slow data')
-    for filename in slownames:
-        # Generate the output directory and make sure it exists
-        rundir = get_run_directory(filename)
-        subdir = data_subdir(rundir)
-        outdir_tot = os.path.join(output_basedir, subdir)
-        ensureDir(outdir_tot)
+    # Do max_num_jobs at a time
+    for _theseslownames in [slownames[i:i+max_num_jobs]
+                            for i in range(0, len(slownames), max_num_jobs)]:
+        if batch:
+            subprocs = []
+            cleanup_commands = []
+    
+        for filename in _theseslownames:
+            # Generate the output directory and make sure it exists
+            rundir = get_run_directory(filename)
+            subdir = data_subdir(rundir)
+            outdir_tot = os.path.join(output_basedir, subdir)
+            ensureDir(outdir_tot)
+            
+            # generate driver file
+            daqfile = generateDriverFile(outdir_tot, filename, 'NULL.root')
 
-        # generate driver file
-        daqfile = generateDriverFile(outdir_tot, filename, 'NULL.root')
-
-        # generate and run command
-        slow_cmd_string = './slowdaq -i ' + daqfile
-        os.system(slow_cmd_string)
-        cmd_string = 'rm -f ' + daqfile
-        os.system(cmd_string)
+            # generate and run command
+            slow_cmd_string = './slowdaq -i ' + daqfile
+            cleanup_cmd_string = 'rm -f ' + daqfile
+            if not batch:
+                os.system(slow_cmd_string)
+                os.system(cleanup_cmd_string)
+            else:
+                subprocs.append(subprocess.Popen('srun --time=5 ' + slow_cmd_string, shell=True))
+                cleanup_commands.append(cleanup_cmd_string)
+                jobs_submitted += 1
+            # If running on batch wait for jobs to finish
+        if batch:
+            for sp, cleanup_cmd_string in zip(subprocs, cleanup_commands):
+                sp.wait()
+                os.system(cleanup_cmd_string)
     print('MAIN:: Done parsing slow data, moving on to fast data')
 
 ############################################################################################
@@ -189,41 +212,61 @@ def make_calibration(indir, calib, run):
 # Process all fast data in a subdirectory of basedir, with or without calibration
 # calib is location of ecal.C output or 'NULL.root' to process without calibration
 #
-def process_fast_data(basedir, calib):
+def process_fast_data(basedir, calib, batch):
     # Get all .bin files in data directory
     filenames = getFiles(basedir, "bin", timeLimit)
 
     print('MAIN:: Run daqana with/without energy calibration')
-    for filename in filenames:
-        # Generate the output directory and make sure it exists
-        rundir = get_run_directory(filename)
-        subdir = data_subdir(rundir)
-        outdir_tot = os.path.join(output_basedir, subdir)
-        if calib == 'NULL.root':
-            outdir_tot = os.path.join(outdir_tot, 'calibration')
-        ensureDir(outdir_tot)
-        
-        print('FILE:', filename)
-        # generate driver file
-        daqfile = generateDriverFile(outdir_tot,filename,calib)
-        
-        cmd_string = './daqana -i ' + daqfile
-        if (calib != 'NULL.root'):
-          # include the slow data
-          cmd_string = cmd_string + ' -s -l'
-        else:
-          # no slow data when we do the calibration
-          cmd_string = cmd_string + ' -l'
+    
+    for _thesenames in [filenames[i:i+max_num_jobs]
+                            for i in range(0, len(filenames), max_num_jobs)]:
+        if batch:
+            subprocs = []
+            cleanup_commands = []
 
-        if(grafOn):
-          cmd_string = cmd_string + ' -g'
+        for filename in _thesenames:
+            # Generate the output directory and make sure it exists
+            rundir = get_run_directory(filename)
+            subdir = data_subdir(rundir)
+            outdir_tot = os.path.join(output_basedir, subdir)
+            if calib == 'NULL.root':
+                outdir_tot = os.path.join(outdir_tot, 'calibration')
+            ensureDir(outdir_tot)
         
-        print('MAIN:: Processing ' + filename)
-        os.system(cmd_string)
-        print('MAIN:: Processing complete for ' + filename)
-        print('MAIN:: Remove ' + daqfile)
-        cmd_string = 'rm -f ' + daqfile
-        os.system(cmd_string)
+            print('FILE:', filename)
+            # generate driver file
+            daqfile = generateDriverFile(outdir_tot,filename,calib)
+            
+            cmd_string = './daqana -i ' + daqfile
+            if (calib != 'NULL.root'):
+                # include the slow data
+                cmd_string = cmd_string + ' -s -l'
+            else:
+                # no slow data when we do the calibration
+                cmd_string = cmd_string + ' -l'
+
+            if(grafOn):
+                cmd_string = cmd_string + ' -g'
+        
+            cleanup_cmd_string = 'rm -f ' + daqfile
+
+            if not batch:
+                print('MAIN:: Processing ' + filename)
+                os.system(cmd_string)
+                print('MAIN:: Processing complete for ' + filename)
+                print('MAIN:: Remove ' + daqfile)
+                os.system(cleanup_cmd_string)
+            else:
+                print('MAIN:: Submitting job for ' + filename)
+                subprocs.append(subprocess.Popen('srun --time=30 ' + cmd_string, shell=True))
+                cleanup_commands.append(cleanup_cmd_string)
+            # If running on batch wait for jobs to finish
+        if batch:
+            print("Would now wait")
+            for sp, cleanup_cmd_string in zip(subprocs, cleanup_commands):
+                sp.wait()
+                print('MAIN:: Remove ' + daqfile)
+                os.system(cleanup_cmd_string)
 
 ############################################################################################
 def makelink(mc_path, mc_link):
@@ -289,7 +332,7 @@ if fastOn:
     #
     
     if (processLevel <= 0):
-        process_fast_data(filebase, 'NULL.root')
+        process_fast_data(filebase, 'NULL.root', batch_fast)
         
     #
     #  run with calibration
@@ -299,14 +342,16 @@ if fastOn:
             subdir = data_subdir(rundir)
             indir = os.path.join(output_basedir, subdir, 'calibration')
             runname = make_run_name(subdir)
-            calibration = cal_output+'/CAL_'+runname+'.root'
+
+            if calibration == 'NULL.root':
+                calibration = cal_output+'/CAL_'+runname+'.root'
             
-            # Do the calibration
-            make_calibration(indir, calibration, runname)
+                # Do the calibration
+                make_calibration(indir, calibration, runname)
             
             # Process slow and then fast data
-            if slowOn: process_slow_data(filebase)
-            process_fast_data(filebase, calibration)
+            if slowOn: process_slow_data(filebase, batch_slow)
+            process_fast_data(filebase, calibration, batch_fast)
             
 
     #
@@ -326,7 +371,7 @@ if fastOn:
 #
 elif slowOn:
     print('daqprocessor::MAIN process slow only')
-    process_slow_data(filebase)
+    process_slow_data(filebase, batch_slow)
 
 print('MAIN:: Exit from the daq-processor. bye-bye.')
 
