@@ -13,10 +13,10 @@
 #include "TStyle.h"
 
 // N_baseline_calc = nPreTrigger - N_BASELINE_NOT_USED
-//#define N_BASELINE_NOT_USED 5
+//#define N_BASELINE_NOT_USED 5 
 #define N_BASELINE_NOT_USED 10
-#define FRACTION 0.9
-#define RMS_MAX_VALUE 25. // maximum baseline RMS value to flag error
+#define FRACTION 0.9 
+#define RMS_MAX_VALUE 25. // maximum baseline RMS value to flag error 
 
 // ADC settings
 #define ADC_MAX_VALUE   16384
@@ -29,7 +29,7 @@
 #define DOUBLE_PEAK_ERROR  0x04
 
 // bins to count parts of our integral ....
-// used to calculate energy ratios to discriminate between single and double peaks
+// used to calculate energy ratios to discriminate between single and double peaks.
 #define NBIN_RATIO 15+24
 
 using namespace std;
